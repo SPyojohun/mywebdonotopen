@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>nnn reward</title>
+<meta name="theme-color" content="#120c20">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('nnn-theme')||'dark'}catch(e){}</script>
+</head><body>
+<header>
+  <div class="brand"><img src="icons/icon-192.png" alt="" width="34" height="34"><h1>nnn reward</h1></div>
+  <nav id="nav"><button class="tab on" data-v="home">Home</button><button class="tab" data-v="links">Links</button></nav>
+  <button class="icon" id="theme" aria-label="Switch light or dark theme">◐</button>
+</header>
+<main>
+<section id="home" class="view">
+  <div class="bento">
+    <div class="tile hero">
+      <p class="lead" id="cdLabel">Until 1 December</p>
+      <div class="cd" id="cd"></div>
+    </div>
+    <div class="tile ringbox">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc23d"/><stop offset="1" stop-color="#ff6b8b"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="50" class="rb"/><circle cx="60" cy="60" r="50" class="rf" id="pf" transform="rotate(-90 60 60)"/></svg>
+      <div class="rt"><b id="pp">0%</b><span>of the way</span></div>
+    </div>
+    <div class="tile st" id="stats"></div>
+  </div>
+  <h2>Pinned</h2>
+  <div class="grid" id="pins"></div>
+</section>
+<section id="links" class="view" hidden>
+  <div class="bar">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search your links   /"></label>
+    <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select>
+    <button class="icon" id="view" aria-label="Switch grid or list view">▦</button>
+    <button class="btn gold addbtn" id="add">+ Add link</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="grid"></div>
+  <div class="foot">
+    <button class="btn" id="exp">Export backup</button>
+    <button class="btn" id="imp">Import backup</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+</section>
+</main>
+<button class="fab" id="fab" aria-label="Add link">+</button>
+<dialog id="dlg"><form method="dialog" id="f">
+  <h2 id="dt">Add link</h2>
+  <label>URL<input id="fu" type="url" required placeholder="https://"></label>
+  <label>Name<input id="fn" maxlength="80" placeholder="Leave empty to use the site name"></label>
+  <label>Category<input id="fc" list="cl" placeholder="Pick one or type a new one"></label>
+  <datalist id="cl"></datalist>
+  <label>Custom image URL <small>(optional)</small><input id="fi" type="url" placeholder="Auto-detected when empty"></label>
+  <div class="row"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn gold">Save link</button></div>
+</form></dialog>
+<div id="toast" role="status"><span id="tt"></span><button id="undo" hidden>Undo</button></div>
+<script src="app.js"></script>
+</body></html>
