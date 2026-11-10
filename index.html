@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>nnn reward</title>
+<meta name="referrer" content="no-referrer">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="nnn reward">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script src="theme.js"></script>
+</head><body>
+<header>
+  <div class="brand"><img src="icon-192.png" alt="" width="34" height="34"><h1>nnn reward</h1></div>
+  <nav id="nav"><button class="tab on" data-v="home">Home</button><button class="tab" data-v="links">Links</button><button class="tab" data-v="queue">Playlists</button><button class="tab" data-v="history">History</button><button class="tab" data-v="share">Share</button></nav>
+  <div class="hbtn"><button class="btn" id="inst">Install</button><button class="icon" id="blur" aria-pressed="false" aria-label="Blur covers" title="Blur covers (B)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="icon" id="theme" aria-label="Theme">◐</button></div>
+</header>
+<main>
+<section id="home" class="view">
+  <div class="bento">
+    <div class="tile hero">
+      <p class="lead" id="cdLabel">Until 1 December</p>
+      <div class="cd" id="cd"></div>
+    </div>
+    <div class="tile ringbox">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc23d"/><stop offset="1" stop-color="#ff6b8b"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="50" class="rb"/><circle cx="60" cy="60" r="50" class="rf" id="pf" transform="rotate(-90 60 60)"/></svg>
+      <div class="rt"><b id="pp">0%</b><span>of the way</span></div>
+    </div>
+    <div class="tile st" id="stats"></div>
+  </div>
+  <div class="tile cal">
+    <div class="calh"><div><h2 id="calt"></h2><p id="cals"></p></div><div class="calnav"><button class="icon" id="calprev" aria-label="Previous month">‹</button><button class="icon" id="calnext" aria-label="Next month">›</button></div></div>
+    <div class="calg" id="calg"></div>
+  </div>
+  <div class="sech"><h2>Up next</h2><div class="mb"><button class="btn" id="playq">Play queue</button><button class="btn" id="openn">Open next</button><button class="btn gold" id="pickh">Pick for me</button></div></div>
+  <div class="grid" id="nextup"></div>
+  <h2>Pinned</h2>
+  <div class="grid" id="pins"></div>
+</section>
+<section id="links" class="view" hidden>
+  <div class="bar">
+    <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search your links   /"></label>
+    <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select>
+    <button class="icon" id="view" aria-label="Switch grid or list view">▦</button>
+    <button class="btn" id="pick">Pick for me</button>
+    <button class="btn gold addbtn" id="add">+ Add link</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="sugg"></div>
+  <div class="grid" id="grid"></div>
+  <div class="pager" id="pager"></div>
+  <div class="foot">
+    <button class="btn" id="exp">Export backup</button>
+    <button class="btn" id="imp">Import backup</button>
+    <input type="file" id="file" accept="application/json" hidden>
+    <button class="btn danger" id="clr">Clear all data</button>
+  </div>
+</section>
+<section id="queue" class="view" hidden><div class="sech"><h2 id="plh">Playlists</h2><div class="mb"><button class="btn" id="plback" hidden>Back</button><button class="btn" id="plnew">New playlist</button><button class="btn gold" id="plplay" hidden>Play all</button></div></div><div class="grid" id="qgrid"></div></section>
+<section id="history" class="view" hidden><div class="sech"><h2>History</h2><button class="btn danger" id="clh" style="margin-left:0">Clear history</button></div><div id="hlist"></div></section>
+<section id="share" class="view" hidden>
+  <h2>Share</h2>
+  <p class="hint" style="display:block">Send links to another device with no server. You get a file or a link, the other device previews it and saves it only if you accept.</p>
+  <div class="bar"><select id="shs" aria-label="What to share"></select><button class="btn gold" id="shg">Share these</button></div>
+  <h2>Receive</h2>
+  <div class="bar"><input id="rli" class="ans" placeholder="Paste a share link here"><button class="btn" id="rlb">Preview</button></div>
+  <div class="foot"><button class="btn" id="rfb">Open a share file</button><input type="file" id="rff" accept=".html,.json" hidden></div>
+</section>
+</main>
+<button class="fab" id="fab" aria-label="Add link">+</button>
+<dialog id="dlg"><form method="dialog" id="f">
+  <h2 id="dt">Add link</h2>
+  <button type="button" class="btn" id="many" style="margin-top:6px">Paste many links at once</button>
+  <label>URL<input id="fu" type="url" required placeholder="https://"></label>
+  <p class="note" id="dupnote" hidden></p>
+  <div class="pv" id="pv" hidden></div>
+  <div class="cands" id="cands" hidden></div>
+  <label class="chk" id="cgl" hidden><input type="checkbox" id="cng" checked> Hide GIFs in the picture strip</label>
+  <button type="button" class="btn" id="redo" style="margin-top:8px">Detect picture again</button>
+  <button type="button" class="btn" id="hsb" style="margin-top:8px">Paste page source</button>
+  <div id="hsw" hidden><textarea id="hst" class="ans" rows="4" style="margin-top:8px;font-size:.9rem" placeholder="Desktop: open the page, press Ctrl+U, select all, copy, paste here. Phone: type view-source: before the address, then copy all."></textarea><button type="button" class="btn gold" id="hsg" style="margin-top:8px">Detect from source</button></div>
+  <label>Name<input id="fn" maxlength="80" placeholder="Leave empty to use the site name"></label>
+  <label>Category<input id="fc" list="cl" placeholder="Pick one or type a new one"></label>
+  <div class="cp" id="cp"></div>
+  <datalist id="cl"></datalist>
+  <label>Custom image or video URL <small>(optional)</small><input id="fi" type="url" placeholder="Auto-detected when empty"></label>
+  <label>Video URL to play <small>(optional)</small><input id="fvu" type="url" placeholder="Direct video, stream or page address"></label>
+  <div class="up"><button type="button" class="btn" id="upb">Upload image from device</button><button type="button" class="btn" id="upp">Paste image</button><button type="button" class="btn" id="upx" hidden>Remove upload</button><input type="file" id="upf" accept="image/*" hidden></div>
+  <label class="chk"><input type="checkbox" id="fw"> Already watched</label>
+  <div class="row"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn gold">Save link</button></div>
+</form></dialog>
+<dialog id="pk"><h2>Tonight's pick</h2><div class="grid" id="pkc"></div><div class="row"><button class="btn" id="pkq">Add to queue</button><button class="btn" id="pkr">Pick again</button><button class="btn gold" id="pkx">Close</button></div></dialog>
+<dialog id="bk"><h2>Add many links</h2><p class="hint" style="display:block">Paste links in any layout. Titles and pictures fill in on their own.</p>
+  <textarea id="bt" class="ans" rows="7" placeholder="https://..." style="margin-top:12px;font-size:1rem"></textarea>
+  <label>Category<input id="bc" list="cl" placeholder="Optional"></label><p class="hint" id="bn" style="display:block"></p>
+  <div class="row"><button class="btn" id="bx">Cancel</button><button class="btn gold" id="bg">Add all</button></div></dialog>
+<dialog id="cpk"><h2>Move to category</h2><div class="cp" id="cpkc"></div>
+  <label>Or a new category<input id="cpn" placeholder="Type a new name"></label>
+  <div class="row"><button class="btn" id="cpx">Close</button><button class="btn gold" id="cps">Save</button></div></dialog>
+<dialog id="thd"><h2>Theme</h2>
+  <div class="presets" id="thp"></div>
+  <div class="tgrid"><label>Accent<input type="color" id="tha"></label><label>Background<input type="color" id="thb"></label><label>Cards<input type="color" id="ths"></label><label>Text<input type="color" id="tht"></label></div>
+  <label>Cover blur strength<input type="range" id="thbl" min="4" max="40" step="2"></label>
+  <label class="chk"><input type="checkbox" id="thpk"> Reveal a cover while hovering it (desktop)</label>
+  <label>Corner roundness<input type="range" id="thr" min="0" max="32"></label>
+  <label>Card size<input type="range" id="thw" min="200" max="400" step="10"></label>
+  <div class="tgrid"><label>Font<select id="thf"><option value="sans">Clean</option><option value="rounded">Rounded</option><option value="mono">Mono</option><option value="serif">Serif</option></select></label>
+  <label>Picture shape<select id="thh"><option value="4/3">Standard</option><option value="16/9">Wide</option><option value="1/1">Square</option><option value="3/4">Tall</option></select></label></div>
+  <div class="row"><button type="button" class="btn" id="thx">Reset</button><button type="button" class="btn gold" id="thc">Done</button></div></dialog>
+<dialog id="pl"><div class="plh"><b id="plt"></b><button type="button" class="icon" id="plx" aria-label="Close player">✕</button></div>
+  <div class="stage" id="stg"></div>
+  <div class="pctl">
+   <button type="button" class="btn" id="pprev">Prev</button><button type="button" class="btn" id="pnext">Next</button>
+   <select id="pq" aria-label="Quality"></select>
+   <select id="ps" aria-label="Speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
+   <button type="button" class="btn" id="pmute">Mute</button><input type="range" id="pvol" min="0" max="1" step="0.05" aria-label="Volume">
+   <label class="chk"><input type="checkbox" id="ploop"> Loop</label><label class="chk"><input type="checkbox" id="pauto"> Auto-next</label>
+   <select id="pfit" aria-label="Fit"><option value="contain">Fit</option><option value="cover">Fill</option></select>
+   <label class="chk">Brightness <input type="range" id="pbr" min="50" max="150"></label>
+   <button type="button" class="btn" id="ppip">Pop out</button>
+  </div>
+  <div class="pcu"><input id="pcu" type="url" placeholder="Paste any video URL to play it here"><button type="button" class="btn" id="pcg">Play URL</button><button type="button" class="btn" id="pcs">Save to link</button></div>
+  <div id="plist"></div></dialog>
+<dialog id="shd"><h2 id="sht">Share</h2><p class="hint" id="shn" style="display:block"></p>
+  <label class="chk"><input type="checkbox" id="shi" checked> Include uploaded pictures (makes the file bigger)</label>
+  <div class="row" style="justify-content:flex-start"><button type="button" class="btn gold" id="shf">Download share file</button><button type="button" class="btn" id="shl">Share link</button><button type="button" class="btn" id="shx">Close</button></div>
+  <p class="hint" id="shm" style="display:block"></p></dialog>
+<dialog id="rcv"><h2>You received links</h2><p class="hint" id="rcs" style="display:block"></p><div id="rcl"></div>
+  <label class="chk"><input type="checkbox" id="rcd" checked> Skip links I already have</label>
+  <div class="row"><button type="button" class="btn" id="rcx">Decline</button><button type="button" class="btn gold" id="rca">Accept</button></div></dialog>
+<dialog id="ihd"><h2>Install nnn reward</h2><p id="iht" class="hint" style="display:block"></p><ul id="ihl" class="chk2"></ul><div class="row"><button type="button" class="btn gold" id="ihx">Close</button></div></dialog>
+<dialog id="apd"><h2>Add to playlist</h2><div id="apl" class="apl"></div>
+  <label>New playlist<input id="apn" placeholder="Playlist name"></label>
+  <div class="row"><button type="button" class="btn" id="apx">Done</button><button type="button" class="btn gold" id="apc">Create and add</button></div></dialog>
+<div id="toast" role="status"><span id="tt"></span><button id="undo" hidden>Undo</button></div>
+<script src="app.js"></script>
+</body></html>
