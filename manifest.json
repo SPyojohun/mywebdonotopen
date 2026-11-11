@@ -46,8 +46,8 @@
    "url": "./index.html?go=pick"
   },
   {
-   "name": "Queue",
-   "url": "./index.html?go=queue"
+   "name": "Categories",
+   "url": "./index.html?go=cats"
   }
  ],
  "id": "./index.html",

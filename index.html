@@ -16,7 +16,7 @@
 </head><body>
 <header>
   <div class="brand"><img src="icon-192.png" alt="" width="34" height="34"><h1>nnn reward</h1></div>
-  <nav id="nav"><button class="tab on" data-v="home">Home</button><button class="tab" data-v="links">Links</button><button class="tab" data-v="queue">Playlists</button><button class="tab" data-v="history">History</button><button class="tab" data-v="share">Share</button></nav>
+  <nav id="nav"><button class="tab on" data-v="home">Home</button><button class="tab" data-v="links">Links</button><button class="tab" data-v="cats">Categories</button><button class="tab" data-v="history">History</button><button class="tab" data-v="share">Share</button></nav>
   <div class="hbtn"><button class="btn" id="inst">Install</button><button class="icon" id="blur" aria-pressed="false" aria-label="Blur covers" title="Blur covers (B)"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button class="icon" id="theme" aria-label="Theme">◐</button></div>
 </header>
 <main>
@@ -37,17 +37,18 @@
     <div class="calh"><div><h2 id="calt"></h2><p id="cals"></p></div><div class="calnav"><button class="icon" id="calprev" aria-label="Previous month">‹</button><button class="icon" id="calnext" aria-label="Next month">›</button></div></div>
     <div class="calg" id="calg"></div>
   </div>
-  <div class="sech"><h2>Up next</h2><div class="mb"><button class="btn" id="playq">Play queue</button><button class="btn" id="openn">Open next</button><button class="btn gold" id="pickh">Pick for me</button></div></div>
-  <div class="grid" id="nextup"></div>
+  <div id="bkb"></div>
+  <div class="sech"><h2>Tonight</h2><button class="btn gold" id="pickh">Pick for me</button></div>
   <h2>Pinned</h2>
   <div class="grid" id="pins"></div>
 </section>
 <section id="links" class="view" hidden>
   <div class="bar">
     <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search your links   /"></label>
-    <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option></select>
+    <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option><option value="open">Last opened</option><option value="most">Most opened</option><option value="rate">Top rated</option></select>
+    <select id="qf" aria-label="Filter"><option value="all">All links</option><option value="unw">Unwatched</option><option value="wat">Watched</option><option value="nev">Never opened</option><option value="pin">Pinned</option><option value="r4">Rated 4+</option><option value="wk">New this week</option><option value="dead">Dead links</option></select>
     <button class="icon" id="view" aria-label="Switch grid or list view">▦</button>
-    <button class="btn" id="pick">Pick for me</button>
+    <button class="btn" id="selb">Select</button><button class="btn" id="pick">Pick for me</button>
     <button class="btn gold addbtn" id="add">+ Add link</button>
   </div>
   <div class="chips" id="chips"></div>
@@ -55,14 +56,26 @@
   <div class="grid" id="grid"></div>
   <div class="pager" id="pager"></div>
   <div class="foot">
-    <button class="btn" id="exp">Export backup</button>
+    <button class="btn" id="chk">Check for dead links</button><button class="btn" id="exp">Export backup</button>
     <button class="btn" id="imp">Import backup</button>
     <input type="file" id="file" accept="application/json" hidden>
     <button class="btn danger" id="clr">Clear all data</button>
   </div>
 </section>
-<section id="queue" class="view" hidden><div class="sech"><h2 id="plh">Playlists</h2><div class="mb"><button class="btn" id="plback" hidden>Back</button><button class="btn" id="plnew">New playlist</button><button class="btn gold" id="plplay" hidden>Play all</button></div></div><div class="grid" id="qgrid"></div></section>
-<section id="history" class="view" hidden><div class="sech"><h2>History</h2><button class="btn danger" id="clh" style="margin-left:0">Clear history</button></div><div id="hlist"></div></section>
+<section id="cats" class="view" hidden>
+  <div class="sech"><h2>Categories</h2><button class="btn" id="cde">Delete empty</button></div>
+  <div id="catlist"></div>
+  <h2>Filter by word</h2>
+  <div class="bar"><input id="cwq" class="ans" placeholder="Word or text to find"><select id="cws" aria-label="Where to look"><option value="name">in name</option><option value="url">in URL</option><option value="both">name or URL</option></select></div>
+  <label class="chk"><input type="checkbox" id="cwu" checked> Only links with no category</label>
+  <label class="chk"><input type="checkbox" id="cww"> Whole word only</label>
+  <p class="hint" id="cwn" style="display:block"></p><div id="cwp"></div>
+  <div class="bar"><input id="cwc" list="cl" class="ans" placeholder="Category to put them in"><button class="btn gold" id="cwm">Move</button><button class="btn" id="cwr">Save as rule</button></div>
+  <h2>Auto rules</h2><div id="rules"></div><button class="btn" id="cwa" style="margin-top:8px">Apply rules to uncategorized</button>
+  <h2>Merge</h2><div class="bar"><select id="mf" aria-label="From"></select><select id="mt" aria-label="Into"></select><button class="btn" id="mg">Merge</button></div>
+</section>
+<section id="history" class="view" hidden><div class="sech"><h2>History</h2><button class="btn danger" id="clh" style="margin-left:0">Clear history</button></div><div id="hlist"></div>
+<div class="sech"><h2>Trash</h2><button class="btn danger" id="trem" style="margin-left:0">Empty trash</button></div><p class="hint" style="display:block">Deleted links stay here for 30 days.</p><div id="trashlist"></div></section>
 <section id="share" class="view" hidden>
   <h2>Share</h2>
   <p class="hint" style="display:block">Send links to another device with no server. You get a file or a link, the other device previews it and saves it only if you accept.</p>
@@ -84,17 +97,17 @@
   <button type="button" class="btn" id="redo" style="margin-top:8px">Detect picture again</button>
   <button type="button" class="btn" id="hsb" style="margin-top:8px">Paste page source</button>
   <div id="hsw" hidden><textarea id="hst" class="ans" rows="4" style="margin-top:8px;font-size:.9rem" placeholder="Desktop: open the page, press Ctrl+U, select all, copy, paste here. Phone: type view-source: before the address, then copy all."></textarea><button type="button" class="btn gold" id="hsg" style="margin-top:8px">Detect from source</button></div>
-  <label>Name<input id="fn" maxlength="80" placeholder="Leave empty to use the site name"></label>
+  <label>Name<input id="fn" maxlength="350" placeholder="Leave empty to use the site name"><span id="fnc" class="hint" style="display:block;margin-top:4px"></span></label>
+  <label>Notes <small>(optional)</small><textarea id="fno" class="ans" rows="2" maxlength="2000" placeholder="Episode, time, reminders..."></textarea></label>
   <label>Category<input id="fc" list="cl" placeholder="Pick one or type a new one"></label>
   <div class="cp" id="cp"></div>
   <datalist id="cl"></datalist>
   <label>Custom image or video URL <small>(optional)</small><input id="fi" type="url" placeholder="Auto-detected when empty"></label>
-  <label>Video URL to play <small>(optional)</small><input id="fvu" type="url" placeholder="Direct video, stream or page address"></label>
-  <div class="up"><button type="button" class="btn" id="upb">Upload image from device</button><button type="button" class="btn" id="upp">Paste image</button><button type="button" class="btn" id="upx" hidden>Remove upload</button><input type="file" id="upf" accept="image/*" hidden></div>
+    <div class="up"><button type="button" class="btn" id="upb">Upload image from device</button><button type="button" class="btn" id="upp">Paste image</button><button type="button" class="btn" id="upx" hidden>Remove upload</button><input type="file" id="upf" accept="image/*" hidden></div>
   <label class="chk"><input type="checkbox" id="fw"> Already watched</label>
   <div class="row"><button type="button" class="btn" id="cancel">Cancel</button><button class="btn gold">Save link</button></div>
 </form></dialog>
-<dialog id="pk"><h2>Tonight's pick</h2><div class="grid" id="pkc"></div><div class="row"><button class="btn" id="pkq">Add to queue</button><button class="btn" id="pkr">Pick again</button><button class="btn gold" id="pkx">Close</button></div></dialog>
+<dialog id="pk"><h2>Tonight's pick</h2><div class="grid" id="pkc"></div><div class="row"><button class="btn" id="pkr">Pick again</button><button class="btn gold" id="pkx">Close</button></div></dialog>
 <dialog id="bk"><h2>Add many links</h2><p class="hint" style="display:block">Paste links in any layout. Titles and pictures fill in on their own.</p>
   <textarea id="bt" class="ans" rows="7" placeholder="https://..." style="margin-top:12px;font-size:1rem"></textarea>
   <label>Category<input id="bc" list="cl" placeholder="Optional"></label><p class="hint" id="bn" style="display:block"></p>
@@ -105,6 +118,7 @@
 <dialog id="thd"><h2>Theme</h2>
   <div class="presets" id="thp"></div>
   <div class="tgrid"><label>Accent<input type="color" id="tha"></label><label>Background<input type="color" id="thb"></label><label>Cards<input type="color" id="ths"></label><label>Text<input type="color" id="tht"></label></div>
+  <label>Interface size (if things look too big or small)<input type="range" id="thz" min="70" max="130" step="5"></label>
   <label>Cover blur strength<input type="range" id="thbl" min="4" max="40" step="2"></label>
   <label class="chk"><input type="checkbox" id="thpk"> Reveal a cover while hovering it (desktop)</label>
   <label>Corner roundness<input type="range" id="thr" min="0" max="32"></label>
@@ -112,31 +126,17 @@
   <div class="tgrid"><label>Font<select id="thf"><option value="sans">Clean</option><option value="rounded">Rounded</option><option value="mono">Mono</option><option value="serif">Serif</option></select></label>
   <label>Picture shape<select id="thh"><option value="4/3">Standard</option><option value="16/9">Wide</option><option value="1/1">Square</option><option value="3/4">Tall</option></select></label></div>
   <div class="row"><button type="button" class="btn" id="thx">Reset</button><button type="button" class="btn gold" id="thc">Done</button></div></dialog>
-<dialog id="pl"><div class="plh"><b id="plt"></b><button type="button" class="icon" id="plx" aria-label="Close player">✕</button></div>
-  <div class="stage" id="stg"></div>
-  <div class="pctl">
-   <button type="button" class="btn" id="pprev">Prev</button><button type="button" class="btn" id="pnext">Next</button>
-   <select id="pq" aria-label="Quality"></select>
-   <select id="ps" aria-label="Speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1">1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
-   <button type="button" class="btn" id="pmute">Mute</button><input type="range" id="pvol" min="0" max="1" step="0.05" aria-label="Volume">
-   <label class="chk"><input type="checkbox" id="ploop"> Loop</label><label class="chk"><input type="checkbox" id="pauto"> Auto-next</label>
-   <select id="pfit" aria-label="Fit"><option value="contain">Fit</option><option value="cover">Fill</option></select>
-   <label class="chk">Brightness <input type="range" id="pbr" min="50" max="150"></label>
-   <button type="button" class="btn" id="ppip">Pop out</button>
-  </div>
-  <div class="pcu"><input id="pcu" type="url" placeholder="Paste any video URL to play it here"><button type="button" class="btn" id="pcg">Play URL</button><button type="button" class="btn" id="pcs">Save to link</button></div>
-  <div id="plist"></div></dialog>
 <dialog id="shd"><h2 id="sht">Share</h2><p class="hint" id="shn" style="display:block"></p>
   <label class="chk"><input type="checkbox" id="shi" checked> Include uploaded pictures (makes the file bigger)</label>
-  <div class="row" style="justify-content:flex-start"><button type="button" class="btn gold" id="shf">Download share file</button><button type="button" class="btn" id="shl">Share link</button><button type="button" class="btn" id="shx">Close</button></div>
-  <p class="hint" id="shm" style="display:block"></p></dialog>
+  <label>Link and file expire after<div class="bar" style="margin-top:6px"><select id="she" aria-label="Expiry"><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="360">6 hours</option><option value="1440">1 day</option><option value="10080">7 days</option><option value="0">Forever</option><option value="c">Custom (typed)</option></select><input id="shy" class="ans" placeholder="or type: 45m, 2h, 3d, forever"></div></label>
+  <div class="row" style="justify-content:flex-start"><button type="button" class="btn gold" id="shf">Download share file</button><button type="button" class="btn" id="shl">Share link</button><button type="button" class="btn" id="shs2">Short link</button><button type="button" class="btn" id="shq">QR code</button><button type="button" class="btn" id="shx">Close</button></div>
+  <p class="hint" id="shm" style="display:block"></p><div id="shqr" style="margin-top:10px"></div></dialog>
 <dialog id="rcv"><h2>You received links</h2><p class="hint" id="rcs" style="display:block"></p><div id="rcl"></div>
   <label class="chk"><input type="checkbox" id="rcd" checked> Skip links I already have</label>
   <div class="row"><button type="button" class="btn" id="rcx">Decline</button><button type="button" class="btn gold" id="rca">Accept</button></div></dialog>
 <dialog id="ihd"><h2>Install nnn reward</h2><p id="iht" class="hint" style="display:block"></p><ul id="ihl" class="chk2"></ul><div class="row"><button type="button" class="btn gold" id="ihx">Close</button></div></dialog>
-<dialog id="apd"><h2>Add to playlist</h2><div id="apl" class="apl"></div>
-  <label>New playlist<input id="apn" placeholder="Playlist name"></label>
-  <div class="row"><button type="button" class="btn" id="apx">Done</button><button type="button" class="btn gold" id="apc">Create and add</button></div></dialog>
+<div id="selbar" hidden><span id="selc">0 selected</span><button class="btn" id="sall">All</button><button class="btn" id="scat">Category</button><button class="btn" id="swat">Watched</button><button class="btn" id="spin">Pin</button><button class="btn" id="sshr">Share</button><button class="btn danger" id="sdel">Delete</button><button class="btn gold" id="sdone">Done</button></div>
 <div id="toast" role="status"><span id="tt"></span><button id="undo" hidden>Undo</button></div>
+<script src="qr.js"></script>
 <script src="app.js"></script>
 </body></html>

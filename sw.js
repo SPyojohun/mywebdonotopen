@@ -1,4 +1,4 @@
-const V='nnn-reward-v34',F=['./','index.html','style.css','app.js','theme.js','manifest.json','icon-192.png','icon-512.png'];
+const V='nnn-reward-v43',F=['./','index.html','style.css','app.js','theme.js','qr.js','manifest.json','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(F)));self.skipWaiting()});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V&&x!=='nnn-img').map(x=>caches.delete(x)))).then(()=>clients.claim())));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
