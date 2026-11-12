@@ -1,4 +1,6 @@
-const $=s=>document.querySelector(s);
+const NUL=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?()=>'':k==='length'?0:NUL,set:()=>true,apply:()=>NUL,has:()=>true});
+const $=s=>document.querySelector(s)||(console.warn('nnn: missing element',s),NUL);
+const VER='45';
 const fold=s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f\u0E48-\u0E4C]/g,'');
 let db,links=[],cats=[],filter='All',editId=null;
 const NONE='Uncategorized';
@@ -59,7 +61,7 @@ function pager(p,t){if(t<2)return'';const s=new Set([1,t,p-1,p,p+1]);if(p<=3)[2,
 function renderCP(){const v=$('#fc').value.trim();$('#cp').innerHTML=cats.map(c=>`<button type="button" class="chip ${v===c?'on':''}" data-pick="${esc(c)}">${esc(c)}</button>`).join('')}
 function render(){
  analyze();
- const q=fold($('#q').value.trim()),SORT={new:(a,b)=>b.id-a.id,old:(a,b)=>a.id-b.id,az:(a,b)=>(a.name||'').localeCompare(b.name||''),open:(a,b)=>(b.lastOpen||0)-(a.lastOpen||0),most:(a,b)=>(b.opens||0)-(a.opens||0),rate:(a,b)=>(b.rating||0)-(a.rating||0)},QF={all:()=>true,unw:l=>!l.watched,wat:l=>l.watched,nev:l=>!l.opens,pin:l=>l.pinned,r4:l=>(l.rating||0)>=4,wk:l=>l.created>Date.now()-7*864e5,dead:l=>l.dead};
+ const q=fold($('#q').value.trim()),SORT={new:(a,b)=>b.id-a.id,old:(a,b)=>a.id-b.id,az:(a,b)=>(a.name||'').localeCompare(b.name||''),open:(a,b)=>(b.lastOpen||0)-(a.lastOpen||0),most:(a,b)=>(b.opens||0)-(a.opens||0),rate:(a,b)=>(b.rating||0)-(a.rating||0)},QF={all:()=>true,unw:l=>!l.watched,wat:l=>l.watched,nev:l=>!l.opens,pin:l=>l.pinned,r4:l=>(l.rating||0)>=4,wk:l=>l.created>Date.now()-7*864e5,...Object.fromEntries([1,2,3,4,5].map(n=>['s'+n,l=>(l.rating||0)===n])),s0:l=>!l.rating,dead:l=>l.dead};
  const isD=l=>l.id in dupOf,normal=links.filter(l=>!isD(l)),dups=links.filter(isD);
  if(filter===DUP&&!dups.length)filter='All';
  const match=l=>{if(!q)return true;const h=fold([l.name,l.url,l.category,l.notes].join(' '));return q.split(/\s+/).every(t=>h.includes(t))};
@@ -81,8 +83,10 @@ function render(){
   `<button class="chip" id="nc">+ Category</button>`].join('');
  fillScopes();$('#cl').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
  const pins=normal.filter(l=>l.pinned);
+ const fv=normal.filter(l=>l.rating>0).sort((a,b)=>b.rating-a.rating||(b.opens||0)-(a.opens||0)||(b.lastOpen||0)-(a.lastOpen||0)).slice(0,6);
+ $('#favs').innerHTML=fv.map((l,i)=>`<div class="rk"><span class="rkn">#${i+1}</span>${card(l)}</div>`).join('')||'<div class="empty"><b>No favourites yet</b>Tap the stars on a link to rank it here.</div>';
  $('#pins').innerHTML=pins.map(l=>card(l)).join('')||'<div class="empty"><b>No pinned links</b>Tap the star on a link to keep it here.</div>';
- drawSg();renderCats();selUpd();renderBackup();trashHtml();
+ renderCats();selUpd();renderBackup();trashHtml();
  $('#hlist').innerHTML=histHtml();
  $('#stats').innerHTML=`<div>Links<b>${normal.length}</b></div><div>Categories<b>${cats.length}</b></div><div>Pinned<b>${pins.length}</b></div><div>Duplicates<b>${dups.length}</b></div>`}
 async function addCat(n){n=n.trim();if(n&&n!==NONE&&!cats.includes(n))await req(st('cats','readwrite').put({name:n}))}
@@ -164,10 +168,11 @@ $('#cancel').onclick=()=>$('#dlg').close();
 $('#add').onclick=()=>openForm();
 $('#q').oninput=()=>{page=1;render()};
 document.addEventListener('click',async e=>{
+ if(Date.now()<noClick){e.preventDefault();return}
  if(selMode){const c=e.target.closest('#grid .card');if(c){e.preventDefault();const id=+c.dataset.id;SEL.has(id)?SEL.delete(id):SEL.add(id);render();return}}
  const th=e.target.closest('a.thumb[href]');if(th){const tl=links.find(x=>x.id==th.closest('.card').dataset.id);if(tl)logH(tl,'open')}
  const hb=e.target.closest('[data-ho],[data-hd]');if(hb){const h=hist.find(x=>x.id==(hb.dataset.ho||hb.dataset.hd));if(!h)return;if(hb.dataset.hd){await req(st('history','readwrite').delete(h.id));return load()}const l=byId(h.lid);if(l){openUrl(l.url);logH(l,'open')}return}
- const sg=e.target.closest('[data-sg],[data-sx]');if(sg){const x=SG[+(sg.dataset.sg??sg.dataset.sx)];if(!x)return;if(sg.dataset.sg!==undefined)return applySg(x);try{localStorage.setItem('nnn-sgd',JSON.stringify([...dismissed(),x.key]))}catch{}return drawSg()}
+ 
  
  const pg=e.target.closest('[data-p]');if(pg){if(!pg.disabled){page=+pg.dataset.p;render();$('#chips').scrollIntoView({behavior:'smooth'})}return}
  const pk=e.target.closest('[data-pick]');if(pk){$('#fc').value=$('#fc').value.trim()===pk.dataset.pick?'':pk.dataset.pick;catManual=true;renderCP();return}
@@ -322,21 +327,21 @@ $('#cands').onclick=e=>{const i=e.target.closest('[data-u]');if(!i)return;picked
 
 
 
-const SHTPL="<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>nnn reward share</title>\n<style>\nbody{margin:0;background:__BG__;color:__TX__;font:16px/1.5 system-ui,sans-serif;padding:24px}\nmain{max-width:640px;margin:0 auto}\nh1{margin:0 0 4px;color:__ACC__}p{color:__MUT__;margin:4px 0 14px}\n.it{display:flex;gap:12px;align-items:center;background:__CARD__;border:1px solid __LINE__;border-radius:14px;padding:8px;margin-bottom:8px}\n.th{width:96px;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:__LINE__;flex:none}.th img{width:100%;height:100%;object-fit:cover;display:block}\nsmall{display:block;color:__MUT__}\nbutton:disabled{opacity:.4;cursor:default}button{font:inherit;border:0;border-radius:99px;padding:12px 22px;cursor:pointer;background:__ACC__;color:__ON__;font-weight:700}\n.alt{background:transparent;border:1px solid __LINE__;color:__TX__;font-weight:600}\n.row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}#st{color:__ACC__}\n</style></head><body><main>\n<h1>nnn reward</h1><p id=\"sum\"></p>\n<p>This file only previews what you would receive. Nothing is saved until you press Accept here and confirm inside the app. Links stay hidden in the app until your lock opens.</p>\n<div id=\"list\"></div>\n<div class=\"row\"><button id=\"ok\">Accept</button><button class=\"alt\" id=\"dl\">Save as backup file</button></div><p id=\"st\"></p>\n<script type=\"application/json\" id=\"d\">__DATA__</script>\n<script>\nvar D=JSON.parse(document.getElementById('d').textContent),APP='__APP__',OR='__ORIGIN__',L=D.links||[],w=null;\nfunction E(s){return String(s).replace(/[&<>\"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}\nfunction st(t){document.getElementById('st').textContent=t}\ndocument.getElementById('sum').textContent=L.length+' link'+(L.length===1?'':'s')+' ready to receive'+(D.exp?' \u00b7 valid until '+new Date(D.exp).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'');\nif(D.exp&&Date.now()>D.exp){document.getElementById('sum').textContent='This share has expired. Ask for a new one.';document.getElementById('list').innerHTML='';document.getElementById('ok').disabled=true;document.getElementById('dl').disabled=true;L=[]}\ndocument.getElementById('list').innerHTML=L.slice(0,60).map(function(l){return '<div class=\"it\"><div class=\"th\">'+(l.image?'<img referrerpolicy=\"no-referrer\" src=\"'+E(l.image)+'\" onerror=\"this.remove()\">':'')+'</div><div><b>'+E(l.name||'Untitled')+'</b><small>'+E(l.category||'No category')+'</small></div></div>'}).join('')+(L.length>60?'<p>+ '+(L.length-60)+' more</p>':'');\ndocument.getElementById('ok').onclick=function(){w=window.open(APP+'#receive','_blank');st(w?'Waiting for nnn reward to open...':'Your browser blocked the new window. Allow pop-ups and try again.')};\naddEventListener('message',function(e){if(e.source===w&&e.data&&e.data.type==='nnn-ready'){w.postMessage({type:'nnn-share',data:D},OR);st('Sent. Confirm in the nnn reward window.')}});\ndocument.getElementById('dl').onclick=function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='nnn-reward-backup.json';a.click()};\n</script></main></body></html>\n";
+const SHTPL="<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>nnn reward share</title>\n<style>\nbody{margin:0;background:__BG__;color:__TX__;font:16px/1.5 system-ui,sans-serif;padding:24px}\nmain{max-width:640px;margin:0 auto}\nh1{margin:0 0 4px;color:__ACC__}p{color:__MUT__;margin:4px 0 14px}\n.it{display:flex;gap:12px;align-items:center;background:__CARD__;border:1px solid __LINE__;border-radius:14px;padding:8px;margin-bottom:8px}\n.th{width:96px;aspect-ratio:16/10;border-radius:10px;overflow:hidden;background:__LINE__;flex:none}.th img{width:100%;height:100%;object-fit:cover;display:block}\nsmall{display:block;color:__MUT__}\nbutton:disabled{opacity:.4;cursor:default}button{font:inherit;border:0;border-radius:99px;padding:12px 22px;cursor:pointer;background:__ACC__;color:__ON__;font-weight:700}\n.alt{background:transparent;border:1px solid __LINE__;color:__TX__;font-weight:600}\n.row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}#st{color:__ACC__}\n</style></head><body><main>\n<h1>nnn reward</h1><p id=\"sum\"></p>\n<p>This file only previews what you would receive. Nothing is saved until you press Accept here and confirm inside the app. Links stay hidden in the app until your lock opens.</p>\n<div id=\"list\"></div>\n<div class=\"row\"><button id=\"ok\">Accept</button><button class=\"alt\" id=\"dl\">Save as backup file</button></div><p id=\"st\"></p>\n<script type=\"application/json\" id=\"d\">__DATA__</script>\n<script>\nvar D=JSON.parse(document.getElementById('d').textContent),APP='__APP__',OR='__ORIGIN__',L=D.links||[],w=null;\nfunction E(s){return String(s).replace(/[&<>\"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]})}\nfunction st(t){document.getElementById('st').textContent=t}\ndocument.getElementById('sum').textContent=L.length+' link'+(L.length===1?'':'s')+' ready to receive'+(D.exp?' \u00b7 valid until '+new Date(D.exp).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'');\nif(D.exp&&Date.now()>D.exp+12e4){document.getElementById('sum').textContent='This share has expired. Ask for a new one.';document.getElementById('list').innerHTML='';document.getElementById('ok').disabled=true;document.getElementById('dl').disabled=true;L=[]}\ndocument.getElementById('list').innerHTML=L.slice(0,60).map(function(l){return '<div class=\"it\"><div class=\"th\">'+(l.image?'<img referrerpolicy=\"no-referrer\" src=\"'+E(l.image)+'\" onerror=\"this.remove()\">':'')+'</div><div><b>'+E(l.name||'Untitled')+'</b><small>'+E(l.category||'No category')+'</small></div></div>'}).join('')+(L.length>60?'<p>+ '+(L.length-60)+' more</p>':'');\ndocument.getElementById('ok').onclick=function(){w=window.open(APP+'#receive','_blank');st(w?'Waiting for nnn reward to open...':'Your browser blocked the new window. Allow pop-ups and try again.')};\naddEventListener('message',function(e){if(e.source===w&&e.data&&e.data.type==='nnn-ready'){w.postMessage({type:'nnn-share',data:D},OR);st('Sent. Confirm in the nnn reward window.')}});\ndocument.getElementById('dl').onclick=function(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='nnn-reward-backup.json';a.click()};\n</script></main></body></html>\n";
 
 const b64u=a=>{let s='';const b=new Uint8Array(a);for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
 const unb64u=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const s=atob(t),b=new Uint8Array(s.length);for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return b};
 async function packLink(D){const j=new TextEncoder().encode(JSON.stringify(D));if(window.CompressionStream)return'z.'+b64u(await new Response(new Blob([j]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());return'p.'+b64u(j)}
 async function unpackLink(t){return v2(await unpackRaw(t))}
-async function unpackRaw(t){const k=t.slice(0,2),b=unb64u(t.slice(2));if(k==='z.')return JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text());return JSON.parse(new TextDecoder().decode(b))}
-const v2=d=>d&&d.v===2?{exp:d.e?d.e*6e4:0,links:d.l.map(a=>({name:a[0]||'',url:/^https?:\/\//.test(a[1])?a[1]:'https://'+a[1],category:a[2]||''}))}:d;
+async function unpackRaw(t){const k=t.slice(0,2),b=unb64u(t.slice(2));if(k==='z.'&&!window.DecompressionStream)throw new Error('This browser is too old to open this link. Ask for a share file instead.');if(k==='z.')return JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text());return JSON.parse(new TextDecoder().decode(b))}
+const v2=d=>d&&d.v===2?{exp:d.e?d.e*6e4:0,cats:d.c||[],links:d.l.map(a=>({name:a[0]||'',url:/^https?:\/\//.test(a[1])?a[1]:'https://'+a[1],category:a[2]||''}))}:d;
 function payload(list,withImg){const lk=list.map(l=>{const o={name:l.name||'',url:l.url,category:l.category||'',image:l.image&&(withImg||!l.image.startsWith('data:'))?l.image:'',watched:!!l.watched,notes:l.notes||'',rating:l.rating||0};if(l.video)o.video=l.video;if(l.pvu)o.pvu=l.pvu;if(l.videos&&l.videos.length)o.videos=l.videos.slice(0,6);return o});
- return{v:1,app:'nnn-reward',t:Date.now(),exp:shareMs()?Date.now()+shareMs():0,cats:[...new Set(lk.map(x=>x.category).filter(Boolean))],links:lk}}
+ return{v:1,app:'nnn-reward',t:Date.now(),exp:shareMs()?Date.now()+shareMs():0,cats:[...new Set([...lk.map(x=>x.category).filter(Boolean),...SHCATS])],links:lk}}
 function shareHtml(D){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim(),
  map={__BG__:v('--bg'),__CARD__:v('--glass'),__TX__:v('--tx'),__MUT__:v('--mut'),__LINE__:v('--line'),__ACC__:v('--gold'),__ON__:v('--on'),__APP__:new URL('./',location.href).href,__ORIGIN__:location.origin==='null'?'*':location.origin};
  let h=SHTPL;for(const k in map)h=h.split(k).join(map[k]);return h.split('__DATA__').join(JSON.stringify(D).replace(/</g,'\\u003c'))}
-let SH=[];
-function shareSet(list){SH=list;$('#sht').textContent=list.length===1?'Share this link':'Share '+list.length+' links';$('#shn').textContent=list.length===1?(list[0].name||host(list[0].url)):'';$('#shm').textContent='';SHORT='';$('#shqr').innerHTML='';syncExp();$('#shd').showModal()}
+let SH=[],SHCATS=[];
+function shareSet(list,all){SH=list;SHCATS=all?[...cats]:[];$('#sht').textContent=list.length===1?'Share this link':'Share '+list.length+' links';$('#shn').textContent=list.length===1?(list[0].name||host(list[0].url)):'';$('#shm').textContent='';SHORT='';$('#shqr').innerHTML='';syncExp();$('#shd').showModal()}
 $('#shf').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([shareHtml(payload(SH,$('#shi').checked))],{type:'text/html'}));a.download='nnn-reward-share.html';a.click();$('#shm').textContent='File saved. Send it to the other device and open it there in a browser. It works '+expText()+'.'};
 $('#shl').onclick=async()=>{const u=new URL('./',location.href).href+'#share='+await packLink(compact(SH));
  if(u.length>12000){$('#shm').textContent='Too many links for a link ('+u.length+' characters). Use the share file instead.';return}
@@ -347,27 +352,27 @@ function scopeLinks(v){const b=links.filter(l=>!(l.id in dupOf));
  if(v==='pinned')return b.filter(l=>l.pinned);if(v==='new')return b.filter(l=>!l.watched);
  if(v.startsWith('c:'))return b.filter(l=>l.category===v.slice(2));return b}
 function fillScopes(){const sel=$('#shs'),p=sel.value;sel.innerHTML='<option value="all">Everything</option><option value="pinned">Pinned links</option><option value="new">Unwatched links</option>'+cats.map(c=>`<option value="c:${esc(c)}">Category: ${esc(c)}</option>`).join('');if([...sel.options].some(o=>o.value===p))sel.value=p}
-$('#shg').onclick=()=>{const l=scopeLinks($('#shs').value);if(!l.length)return toast('Nothing to share in that selection');shareSet(l)};
+$('#shg').onclick=()=>{const l=scopeLinks($('#shs').value);if(!l.length)return toast('Nothing to share in that selection');shareSet(l,$('#shs').value==='all')};
 let RC=null;
 function clean(d){if(!d||!Array.isArray(d.links))return null;const okU=u=>typeof u==='string'&&/^https?:\/\//i.test(u),str=(x,n)=>typeof x==='string'?x.slice(0,n):'';
  const lk=d.links.slice(0,2000).filter(l=>l&&okU(l.url)).map(l=>({name:str(l.name,350),url:str(l.url,2000),category:str(l.category,60),image:typeof l.image==='string'&&(/^https?:\/\//i.test(l.image)||/^data:image\//i.test(l.image))?l.image.slice(0,3e6):'',video:okU(l.video)?l.video:'',pvu:okU(l.pvu)?l.pvu:'',videos:Array.isArray(l.videos)?l.videos.filter(okU).slice(0,6):[],watched:!!l.watched,notes:str(l.notes,2000),rating:Math.min(5,Math.max(0,+l.rating||0))}));
- return lk.length?{links:lk}:null}
-function showReceive(d){if(d&&d.exp&&Date.now()>d.exp)return toast('This share has expired');const c=clean(d);if(!c)return toast('That share has no valid links');RC=c;RC.exp=d.exp||0;
+ return lk.length?{links:lk,cats:(Array.isArray(d.cats)?d.cats:[]).filter(x=>typeof x==='string'&&x).map(x=>x.slice(0,60)).slice(0,300)}:null}
+function showReceive(d){if(d&&d.exp&&Date.now()>d.exp+12e4)return toast('This share has expired');const c=clean(d);if(!c)return toast('That share has no valid links');RC=c;RC.exp=d.exp||0;RC.cats=c.cats;
  const have=new Set(links.map(l=>nkey(l.url))),seen=new Set(),dup=c.links.filter(l=>{const k=nkey(l.url),x=have.has(k)||seen.has(k);seen.add(k);return x}).length,cs=[...new Set(c.links.map(l=>l.category).filter(Boolean))];
  $('#rcs').textContent=`${c.links.length} link${c.links.length>1?'s':''}${cs.length?' in '+cs.length+' categories ('+cs.slice(0,4).join(', ')+(cs.length>4?'...':'')+')':''}. ${dup} already saved or repeated.${d.exp?' Valid for '+leftText(d.exp-Date.now())+' more.':''}`;
  $('#rcl').innerHTML=c.links.slice(0,40).map(l=>`<div class="ri"><div class="rth">${l.image?`<img referrerpolicy="no-referrer" src="${esc(l.image)}" onerror="this.remove()">`:''}</div><div><b>${esc(l.name||'Untitled')}</b><small>${esc(l.category||'No category')}</small></div></div>`).join('')+(c.links.length>40?`<p class="hint" style="display:block">+ ${c.links.length-40} more</p>`:'');
  if(!$('#rcv').open)$('#rcv').showModal()}
-$('#rca').onclick=async()=>{if(!RC)return;if(RC.exp&&Date.now()>RC.exp){RC=null;$('#rcv').close();return toast('This share expired before you accepted')}const have=new Set(links.map(l=>nkey(l.url))),skip=$('#rcd').checked;let n=0;
- for(const l of RC.links){const k=nkey(l.url);if(skip&&have.has(k))continue;have.add(k);await addCat(l.category);await req(st('links','readwrite').add({...l,created:nowMs(),imp:true}));n++}
- RC=null;$('#rcv').close();await load();document.querySelector('[data-v=links]').click();toast(n+' link'+(n===1?'':'s')+' added');backfill()};
+$('#rca').onclick=async()=>{if(!RC)return;if(RC.exp&&Date.now()>RC.exp+12e4){RC=null;$('#rcv').close();return toast('This share expired before you accepted')}const have=new Map(links.map(l=>[nkey(l.url),l])),skip=$('#rcd').checked;let n=0,up=0;for(const c of RC.cats||[])await addCat(c);
+ for(const l of RC.links){const k=nkey(l.url);if(skip&&have.has(k)){const ex=have.get(k);if(ex&&!ex.category&&l.category){await addCat(l.category);await put({...ex,category:l.category,notes:ex.notes||l.notes||''});up++}continue}have.set(k,l);await addCat(l.category);await req(st('links','readwrite').add({...l,created:nowMs(),imp:true}));n++}
+ RC=null;$('#rcv').close();await load();document.querySelector('[data-v=links]').click();toast(n+' link'+(n===1?'':'s')+' added'+(up?', '+up+' got their category':''));backfill()};
 $('#rcx').onclick=()=>{RC=null;$('#rcv').close()};
 $('#rfb').onclick=()=>$('#rff').click();
 $('#rff').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const t=await f.text(),m=t.match(/<script type="application\/json" id="d">([\s\S]*?)<\/script>/);showReceive(JSON.parse(m?m[1]:t))}catch{toast('Could not read that file')}};
-$('#rlb').onclick=async()=>{const m=$('#rli').value.match(/#share=(\S+)/);if(!m)return toast('Paste a full share link');try{showReceive(await unpackLink(m[1]))}catch{toast('That link could not be read')}};
+$('#rlb').onclick=async()=>{const m=$('#rli').value.match(/#share=(\S+)/);if(!m)return toast('Paste a full share link');try{showReceive(await unpackLink(m[1]))}catch(e){toast(e&&e.message&&e.message.startsWith('This browser')?e.message:'That link could not be read')}};
 addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nnn-share')showReceive(d.data)});
 function hashIn(){const h=location.hash,clear=()=>history.replaceState(null,'',location.pathname+location.search);
  if(h==='#receive'){if(window.opener)window.opener.postMessage({type:'nnn-ready'},'*');return clear()}
- const m=h.match(/^#share=(\S+)/);if(m){clear();unpackLink(m[1]).then(showReceive).catch(()=>toast('That share link could not be read'))}}
+ const m=h.match(/^#share=(\S+)/);if(m){clear();unpackLink(m[1]).then(showReceive).catch(e=>toast(e&&e.message&&e.message.startsWith('This browser')?e.message:'That share link could not be read'))}}
 
 if(matchMedia('(pointer:coarse)').matches)$('#q').placeholder='Search your links';
 
@@ -401,27 +406,6 @@ $('#thbl').oninput=e=>{BL.px=+e.target.value;saveBL();applyBlur()};$('#thpk').on
 
 
 const byId=id=>links.find(l=>l.id===id);
-const STOP=new Set('the and for with from this that your you are was were not but all new video videos vid full free best top how why what who when watch watching episode ep part clip clips hd 4k 1080p 720p mp4 com www http https net org html php page site official channel playlist 2023 2024 2025 2026 not out one two get got has have had its our can will just more most very into over about'.split(' '));
-const SEG=typeof Intl!=='undefined'&&Intl.Segmenter?new Intl.Segmenter(undefined,{granularity:'word'}):null,WC=new Map();
-function wordsOf(s){s=String(s||'').toLowerCase();if(WC.has(s))return WC.get(s);const out=new Set(),add=w=>{if(/^\d+$/.test(w)||STOP.has(w))return;if(/^[a-z0-9]+$/.test(w)?w.length<3:w.length<2)return;out.add(w)};
- if(SEG){for(const x of SEG.segment(s))if(x.isWordLike)add(x.segment)}else s.split(/[^\p{L}\p{N}]+/u).forEach(w=>w&&add(w));
- if(WC.size>3000)WC.clear();WC.set(s,out);return out}
-const siteWord=u=>{const p=host(u).split('.');return p.length>2&&p[p.length-1].length===2&&p[p.length-2].length<=3?p[p.length-3]:p[Math.max(0,p.length-2)]};
-const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
-const dismissed=()=>{try{return JSON.parse(localStorage.getItem('nnn-sgd')||'[]')}catch{return[]}};
-let SG=[];
-function suggestions(){const un=links.filter(l=>!(l.id in dupOf)&&!l.category);if(un.length<4)return[];
- const W={},S={};un.forEach(l=>{wordsOf(l.name).forEach(w=>(W[w]=W[w]||[]).push(l.id));const h=siteWord(l.url);if(h&&h.length>2)(S[h]=S[h]||[]).push(l.id)});
- const dis=new Set(dismissed()),have=new Map(cats.map(c=>[c.toLowerCase(),c])),out=[];
- for(const[w,ids]of Object.entries(W))if(ids.length>=4)out.push({key:'w:'+w,word:w,ids,kind:'word'});
- for(const[w,ids]of Object.entries(S))if(ids.length>=4)out.push({key:'s:'+w,word:w,ids,kind:'site'});
- const pick=[];for(const c of out.filter(x=>!dis.has(x.key)&&!(un.length>8&&x.ids.length>=un.length*.9)).sort((a,b)=>b.ids.length-a.ids.length)){
-  if(pick.every(p=>c.ids.filter(i=>p.ids.includes(i)).length<c.ids.length*.5)){c.exists=have.get(c.word)||null;c.name=c.exists||cap(c.word);pick.push(c)}if(pick.length>=2)break}
- return pick}
-async function applySg(s){const prev=s.ids.map(id=>[id,byId(id)?.category||'']);await addCat(s.name);
- for(const id of s.ids){const l=byId(id);if(l)await req(st('links','readwrite').put({...l,category:s.name}))}await load();
- toast(`${s.ids.length} links moved to "${s.name}"`,async()=>{for(const[id,c]of prev){const l=byId(id);if(l)await req(st('links','readwrite').put({...l,category:c}))}if(!s.exists)await req(st('cats','readwrite').delete(s.name));await load()})}
-function drawSg(){SG=suggestions();$('#sugg').innerHTML=SG.map((s,i)=>`<div class="sg"><span>${s.ids.length} saved links ${s.kind==='site'?'come from':'share the word'} <b>${esc(s.word)}</b>. ${s.exists?'Move them to':'Create a category named'} <b>${esc(s.name)}</b>?</span><button class="btn gold" data-sg="${i}">${s.exists?'Move':'Create'}</button><button class="btn" data-sx="${i}">Skip</button></div>`).join('')}
 
 $('#hsb').onclick=()=>{$('#hsw').hidden=!$('#hsw').hidden};
 $('#hsg').onclick=()=>{const u=$('#fu').value.trim(),t=$('#hst').value;if(!u||t.length<50)return toast('Type the link first, then paste the page source');
@@ -431,37 +415,45 @@ $('#hsg').onclick=()=>{const u=$('#fu').value.trim(),t=$('#hst').value;if(!u||t.
 
 
 let RULES=[];try{RULES=JSON.parse(localStorage.getItem('nnn-rules')||'[]')}catch{}
-const saveRules=()=>{try{localStorage.setItem('nnn-rules',JSON.stringify(RULES))}catch{}},lc=fold;
+const saveRules=()=>{try{localStorage.setItem('nnn-rules',JSON.stringify(RULES))}catch{}},lc=fold,cwOff=new Set();
 function hit(l,w,where,whole){w=lc(w.trim());if(!w)return false;const hay=where==='url'?lc(l.url):where==='both'?lc(l.name)+' '+lc(l.url):lc(l.name);
  return whole?new RegExp('(^|[^\\p{L}\\p{N}])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^\\p{L}\\p{N}])','u').test(hay):hay.includes(w)}
 const matchLinks=(w,where,only,whole)=>links.filter(l=>!(l.id in dupOf)&&(!only||!l.category)&&hit(l,w,where,whole));
 const autoCat=()=>{const l={name:$('#fn').value,url:$('#fu').value},r=RULES.find(r=>hit(l,r.w,r.where,r.whole));return r?r.c:''};
-function cwPreview(){const q=$('#cwq').value.trim(),m=matchLinks(q,$('#cws').value,$('#cwu').checked,$('#cww').checked);
- $('#cwn').textContent=q?`${m.length} link${m.length===1?'':'s'} match`:'Type a word to preview the matching links';
- $('#cwp').innerHTML=m.slice(0,8).map(l=>`<div class="ri"><div><b>${esc(l.name||host(l.url))}</b><small>${esc(l.category||'No category')}</small></div></div>`).join('')+(m.length>8?`<p class="hint" style="display:block">+ ${m.length-8} more</p>`:'')}
+const cwShown=()=>matchLinks($('#cwq').value,$('#cws').value,$('#cwu').checked,$('#cww').checked).slice(0,200),cwPicked=()=>cwShown().filter(l=>!cwOff.has(l.id)),cwDest=()=>$('#cwd').value==='__new'?$('#cwc').value.trim():$('#cwd').value;
+function cwCount(){const q=$('#cwq').value.trim(),m=matchLinks($('#cwq').value,$('#cws').value,$('#cwu').checked,$('#cww').checked);$('#cwn').textContent=q?`${cwPicked().length} of ${m.length} link${m.length===1?'':'s'} selected`:'Type a word to preview the matching links'}
+function cwPreview(){const m=cwShown();cwCount();
+ $('#cwp').innerHTML=m.map(l=>`<label class="ri cwr"><input type="checkbox" data-cw="${l.id}" ${cwOff.has(l.id)?'':'checked'}><div><b>${esc(l.name||host(l.url))}</b><small>${esc(l.category||'No category')}</small></div></label>`).join('')}
 function renderCats(){const cnt=c=>links.filter(l=>!(l.id in dupOf)&&(l.category||'')===c).length,o=cats.map(c=>`<option>${esc(c)}</option>`).join('');
  $('#catlist').innerHTML=[...cats,''].map(c=>`<div class="cr"><span class="dotc" style="background:${c?cc(c):'var(--mut)'}"></span><b>${esc(c||NONE)}</b><small>${cnt(c)} links</small><button class="btn" data-cv="${esc(c||NONE)}">View</button>${c?`<button class="btn" data-cn="${esc(c)}">Rename</button><button class="btn" data-cx="${esc(c)}">Delete</button>`:''}</div>`).join('');
- $('#mf').innerHTML=o;$('#mt').innerHTML=o;
- $('#rules').innerHTML=RULES.map((r,i)=>`<div class="cr"><b>${esc(r.w)}</b><small>${r.where}${r.whole?', whole word':''} → ${esc(r.c)}</small><button class="btn" data-rd="${i}">Remove</button></div>`).join('')||'<p class="hint" style="display:block">No rules yet. Filter a word, pick a category and press Save as rule.</p>';cwPreview()}
+ $('#mf').innerHTML=o;$('#mt').innerHTML=o;const cur=$('#cwd').value;$('#cwd').innerHTML='<option value="">Choose a category...</option>'+o+'<option value="__new">+ Create new category...</option>';
+ if([...$('#cwd').options].some(x=>x.value===cur))$('#cwd').value=cur;$('#cwc').hidden=$('#cwd').value!=='__new';
+ $('#rules').innerHTML=RULES.map((r,i)=>`<div class="cr"><b>${esc(r.w)}</b><small>${r.where}${r.whole?', whole word':''} → ${esc(r.c)}</small><button class="btn" data-rd="${i}">Remove</button></div>`).join('')||'<p class="hint" style="display:block">No rules yet. Filter a word, choose a category and press Save as rule.</p>';cwPreview()}
 async function setCats(pairs,msg,undoNew){const prev=pairs.map(([l])=>[l.id,l.category||'']);
  for(const[l,c]of pairs){if(c)await addCat(c);await req(st('links','readwrite').put({...l,category:c}))}await load();
  toast(msg,async()=>{for(const[id,c]of prev){const l=byId(id);if(l)await req(st('links','readwrite').put({...l,category:c}))}if(undoNew)await req(st('cats','readwrite').delete(undoNew));await load()})}
 async function renameCat(o,n){n=n.trim();if(!n||n===o)return;await addCat(n);for(const l of links.filter(l=>l.category===o))await req(st('links','readwrite').put({...l,category:n}));await req(st('cats','readwrite').delete(o));if(filter===o)filter=n;await load();toast('Renamed to "'+n+'"')}
-['cwq','cws','cwu','cww'].forEach(i=>$('#'+i).addEventListener('input',cwPreview));
+['cwq','cws','cwu','cww'].forEach(i=>$('#'+i).addEventListener('input',()=>{cwOff.clear();cwPreview()}));
+$('#cwd').onchange=()=>{$('#cwc').hidden=$('#cwd').value!=='__new';if(!$('#cwc').hidden)$('#cwc').focus()};
+$('#cwp').addEventListener('change',e=>{const c=e.target.closest('[data-cw]');if(!c)return;c.checked?cwOff.delete(+c.dataset.cw):cwOff.add(+c.dataset.cw);cwCount()});
+$('#cwall').onclick=()=>{cwOff.clear();cwPreview()};$('#cwnone').onclick=()=>{cwShown().forEach(l=>cwOff.add(l.id));cwPreview()};
+const addNewCat=async()=>{const n=$('#ncn').value.trim();if(!n)return toast('Type a category name');if(cats.includes(n))return toast('That category already exists');await addCat(n);$('#ncn').value='';await load();toast('Category "'+n+'" added')};
+$('#nca').onclick=addNewCat;$('#ncn').addEventListener('keydown',e=>{if(e.key==='Enter')addNewCat()});
 $('#cats').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
  if(d.cv){filter=d.cv;page=1;document.querySelector('[data-v=links]').click();return render()}
  if(d.cn){const n=prompt('New name (an existing name merges the two)',d.cn);if(n)await renameCat(d.cn,n);return}
  if(d.cx){if(!confirm('Delete "'+d.cx+'"? Its links stay, with no category.'))return;const ps=links.filter(l=>l.category===d.cx).map(l=>[l,'']);await req(st('cats','readwrite').delete(d.cx));if(filter===d.cx)filter='All';await setCats(ps,'Category deleted');return}
  if(d.rd){RULES.splice(+d.rd,1);saveRules();return renderCats()}
- if(b.id==='cwm'){const m=matchLinks($('#cwq').value,$('#cws').value,$('#cwu').checked,$('#cww').checked),c=$('#cwc').value.trim();if(!m.length||!c)return toast(!c?'Type the category first':'No links match');const isNew=!cats.includes(c);await setCats(m.map(l=>[l,c]),`${m.length} links moved to "${c}"`,isNew?c:'')}
- if(b.id==='cwr'){const w=$('#cwq').value.trim(),c=$('#cwc').value.trim();if(!w||!c)return toast('Type a word and a category first');await addCat(c);RULES.push({w,c,where:$('#cws').value,whole:$('#cww').checked});saveRules();await load();toast('Rule saved. New links with that word go to "'+c+'"')}
+ if(b.id==='cwm'){const m=cwPicked(),c=cwDest();if(!c)return toast('Choose a category, or create a new one');if(!m.length)return toast('No links selected');const isNew=!cats.includes(c);await setCats(m.map(l=>[l,c]),`${m.length} link${m.length>1?'s':''} moved to "${c}"`,isNew?c:'')}
+ if(b.id==='cwr'){const w=$('#cwq').value.trim(),c=cwDest();if(!w||!c)return toast('Type a word and choose a category first');await addCat(c);RULES.push({w,c,where:$('#cws').value,whole:$('#cww').checked});saveRules();await load();toast('Rule saved. New links with that word go to "'+c+'"')}
  if(b.id==='cwa'){const ps=[];for(const l of links.filter(l=>!l.category&&!(l.id in dupOf))){const r=RULES.find(r=>hit(l,r.w,r.where,r.whole));if(r)ps.push([l,r.c])}if(!ps.length)return toast('No uncategorized link matches a rule');await setCats(ps,ps.length+' links filed by your rules')}
  if(b.id==='mg'){const f=$('#mf').value,t=$('#mt').value;if(!f||!t||f===t)return toast('Pick two different categories');await renameCat(f,t)}
  if(b.id==='cde'){const em=cats.filter(c=>!links.some(l=>l.category===c));if(!em.length)return toast('No empty categories');for(const c of em)await req(st('cats','readwrite').delete(c));await load();toast(em.length+' empty categories deleted')}});
 
+
 function openUrl(u){const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}
 
-const compact=list=>({v:2,e:shareMs()?Math.floor((Date.now()+shareMs())/6e4):0,l:list.map(l=>{const a=[l.name||'',l.url.replace(/^https:\/\//,''),l.category||''];while(a.length>2&&!a[a.length-1])a.pop();return a})});
+const compact=list=>({v:2,...(SHCATS.length?{c:SHCATS}:{}),e:shareMs()?Math.floor((Date.now()+shareMs())/6e4):0,l:list.map(l=>{const a=[l.name||'',l.url.replace(/^https:\/\//,''),l.category||''];while(a.length>2&&!a[a.length-1])a.pop();return a})});
 $('#shs2').onclick=async()=>{const u=new URL('./',location.href).href+'#share='+await packLink(compact(SH));
  if(!confirm('This sends the link, including the list of links inside it, to is.gd to shorten it. Continue?'))return;
  $('#shm').textContent='Shortening...';let s='';
@@ -521,3 +513,17 @@ function qrSvg(t){const q=new QRC.QRCode(-1,QRC.EC.L);q.addData(t);q.make();cons
 $('#shq').onclick=async()=>{const u=SHORT||(new URL('./',location.href).href+'#share='+await packLink(compact(SH)));
  try{$('#shqr').innerHTML=qrSvg(u);$('#shm').textContent=SHORT?'Scan this with the other device.':'Scan with the other device. Press Short link first for a simpler, easier-to-scan code.'}catch{$('#shqr').innerHTML='';$('#shm').textContent='Too many links for a QR code. Use Short link first, or the share file.'}};
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch{}
+
+
+let holdT=0,noClick=0;
+document.addEventListener('pointerdown',e=>{const th=e.target.closest('.thumb');if(!th||!document.documentElement.classList.contains('blurcov'))return;const c=th.closest('.card');clearTimeout(holdT);holdT=setTimeout(()=>{c.classList.add('peek');noClick=Date.now()+700},250)});
+const endHold=()=>{clearTimeout(holdT);document.querySelectorAll('.card.peek').forEach(c=>c.classList.remove('peek'));if(noClick)noClick=Date.now()+350};
+['pointerup','pointercancel','pointerleave','scroll'].forEach(t=>document.addEventListener(t,endHold,true));
+document.addEventListener('contextmenu',e=>{if(e.target.closest('.thumb')&&matchMedia('(pointer:coarse)').matches)e.preventDefault()});
+$('#favall').onclick=()=>{$('#qf').value='r4';$('#sort').value='rate';page=1;filter='All';document.querySelector('[data-v=links]').click();render()};
+
+(()=>{const m=document.querySelector('meta[name=nnn-ver]');if(m&&m.content===VER)return;
+ const fix=async()=>{try{for(const k of await caches.keys())await caches.delete(k);for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister()}catch{}location.reload()};
+ let tried=0;try{tried=sessionStorage.getItem('nnn-fix')}catch{}
+ if(!tried){try{sessionStorage.setItem('nnn-fix','1')}catch{}return fix()}
+ const b=document.createElement('div');b.id='verb';b.innerHTML='Some app files are out of date (page '+(m?'v'+m.content:'is old')+', script v'+VER+'). Upload ALL files again, then <button id="verfix" class="btn">Clear cache and reload</button>';document.body.prepend(b);document.getElementById('verfix').onclick=fix})();

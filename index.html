@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="nnn reward">
+<meta name="nnn-ver" content="45">
 <meta name="theme-color" content="#0b0b0b">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -39,6 +40,8 @@
   </div>
   <div id="bkb"></div>
   <div class="sech"><h2>Tonight</h2><button class="btn gold" id="pickh">Pick for me</button></div>
+  <div class="sech"><h2>Favourites</h2><button class="btn" id="favall">View all</button></div>
+  <div class="grid" id="favs"></div>
   <h2>Pinned</h2>
   <div class="grid" id="pins"></div>
 </section>
@@ -46,13 +49,13 @@
   <div class="bar">
     <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search your links   /"></label>
     <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option><option value="open">Last opened</option><option value="most">Most opened</option><option value="rate">Top rated</option></select>
-    <select id="qf" aria-label="Filter"><option value="all">All links</option><option value="unw">Unwatched</option><option value="wat">Watched</option><option value="nev">Never opened</option><option value="pin">Pinned</option><option value="r4">Rated 4+</option><option value="wk">New this week</option><option value="dead">Dead links</option></select>
+    <select id="qf" aria-label="Filter"><option value="all">All links</option><option value="unw">Unwatched</option><option value="wat">Watched</option><option value="nev">Never opened</option><option value="pin">Pinned</option><option value="r4">Rated 4+</option><option value="s5">★★★★★ 5 stars</option><option value="s4">★★★★ 4 stars</option><option value="s3">★★★ 3 stars</option><option value="s2">★★ 2 stars</option><option value="s1">★ 1 star</option><option value="s0">Not rated</option><option value="wk">New this week</option><option value="dead">Dead links</option></select>
     <button class="icon" id="view" aria-label="Switch grid or list view">▦</button>
     <button class="btn" id="selb">Select</button><button class="btn" id="pick">Pick for me</button>
     <button class="btn gold addbtn" id="add">+ Add link</button>
   </div>
   <div class="chips" id="chips"></div>
-  <div id="sugg"></div>
+  
   <div class="grid" id="grid"></div>
   <div class="pager" id="pager"></div>
   <div class="foot">
@@ -64,13 +67,14 @@
 </section>
 <section id="cats" class="view" hidden>
   <div class="sech"><h2>Categories</h2><button class="btn" id="cde">Delete empty</button></div>
+  <div class="bar"><input id="ncn" class="ans" placeholder="New category name"><button class="btn gold" id="nca">Add category</button></div>
   <div id="catlist"></div>
   <h2>Filter by word</h2>
   <div class="bar"><input id="cwq" class="ans" placeholder="Word or text to find"><select id="cws" aria-label="Where to look"><option value="name">in name</option><option value="url">in URL</option><option value="both">name or URL</option></select></div>
   <label class="chk"><input type="checkbox" id="cwu" checked> Only links with no category</label>
   <label class="chk"><input type="checkbox" id="cww"> Whole word only</label>
-  <p class="hint" id="cwn" style="display:block"></p><div id="cwp"></div>
-  <div class="bar"><input id="cwc" list="cl" class="ans" placeholder="Category to put them in"><button class="btn gold" id="cwm">Move</button><button class="btn" id="cwr">Save as rule</button></div>
+  <p class="hint" id="cwn" style="display:block"></p><div class="bar"><button class="btn" id="cwall">Select all</button><button class="btn" id="cwnone">Select none</button></div><div id="cwp" class="cwp"></div>
+  <div class="bar"><select id="cwd" aria-label="Destination category"></select><input id="cwc" class="ans" placeholder="New category name" hidden><button class="btn gold" id="cwm">Move</button><button class="btn" id="cwr">Save as rule</button></div>
   <h2>Auto rules</h2><div id="rules"></div><button class="btn" id="cwa" style="margin-top:8px">Apply rules to uncategorized</button>
   <h2>Merge</h2><div class="bar"><select id="mf" aria-label="From"></select><select id="mt" aria-label="Into"></select><button class="btn" id="mg">Merge</button></div>
 </section>
