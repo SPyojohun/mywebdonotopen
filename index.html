@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="nnn reward">
-<meta name="nnn-ver" content="45">
+<meta name="nnn-ver" content="46">
 <meta name="theme-color" content="#0b0b0b">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -34,14 +34,18 @@
     </div>
     <div class="tile st" id="stats"></div>
   </div>
+  <div class="sech"><h2>Today's list</h2><div class="mb"><button class="btn" id="tdsh">Shuffle</button></div></div>
+  <div id="today" class="today"></div><div style="margin-top:8px"><button class="btn" id="tdmore" hidden>More...</button></div>
   <div class="tile cal">
     <div class="calh"><div><h2 id="calt"></h2><p id="cals"></p></div><div class="calnav"><button class="icon" id="calprev" aria-label="Previous month">‹</button><button class="icon" id="calnext" aria-label="Next month">›</button></div></div>
     <div class="calg" id="calg"></div>
   </div>
+  <div id="duew" hidden><div class="sech"><h2>Due for you</h2><button class="btn" id="notib" hidden>Notify me</button></div><div class="grid" id="duel"></div></div>
   <div id="bkb"></div>
   <div class="sech"><h2>Tonight</h2><button class="btn gold" id="pickh">Pick for me</button></div>
   <div class="sech"><h2>Favourites</h2><button class="btn" id="favall">View all</button></div>
   <div class="grid" id="favs"></div>
+  <div id="hcw" hidden><div class="sech"><h2>Your views</h2></div><div class="chips" id="hcolls"></div></div>
   <h2>Pinned</h2>
   <div class="grid" id="pins"></div>
 </section>
@@ -49,17 +53,18 @@
   <div class="bar">
     <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search your links   /"></label>
     <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="az">A to Z</option><option value="open">Last opened</option><option value="most">Most opened</option><option value="rate">Top rated</option></select>
-    <select id="qf" aria-label="Filter"><option value="all">All links</option><option value="unw">Unwatched</option><option value="wat">Watched</option><option value="nev">Never opened</option><option value="pin">Pinned</option><option value="r4">Rated 4+</option><option value="s5">★★★★★ 5 stars</option><option value="s4">★★★★ 4 stars</option><option value="s3">★★★ 3 stars</option><option value="s2">★★ 2 stars</option><option value="s1">★ 1 star</option><option value="s0">Not rated</option><option value="wk">New this week</option><option value="dead">Dead links</option></select>
+    <select id="qf" aria-label="Filter"><option value="all">All links</option><option value="unw">Unwatched</option><option value="wat">Watched</option><option value="nev">Never opened</option><option value="pin">Pinned</option><option value="r4">Rated 4+</option><option value="s5">★★★★★ 5 stars</option><option value="s4">★★★★ 4 stars</option><option value="s3">★★★ 3 stars</option><option value="s2">★★ 2 stars</option><option value="s1">★ 1 star</option><option value="s0">Not rated</option><option value="wk">New this week</option><option value="due">With a reminder</option><option value="dead">Dead links</option></select>
     <button class="icon" id="view" aria-label="Switch grid or list view">▦</button>
-    <button class="btn" id="selb">Select</button><button class="btn" id="pick">Pick for me</button>
+    <button class="btn" id="svw">Save view</button><button class="btn" id="selb">Select</button><button class="btn" id="pick">Pick for me</button>
     <button class="btn gold addbtn" id="add">+ Add link</button>
   </div>
+  <div class="chips" id="colls" hidden></div>
   <div class="chips" id="chips"></div>
   
   <div class="grid" id="grid"></div>
   <div class="pager" id="pager"></div>
   <div class="foot">
-    <button class="btn" id="chk">Check for dead links</button><button class="btn" id="exp">Export backup</button>
+    <button class="btn" id="cvr">Refresh covers</button><button class="btn" id="chk">Check for dead links</button><button class="btn" id="exp">Export backup</button>
     <button class="btn" id="imp">Import backup</button>
     <input type="file" id="file" accept="application/json" hidden>
     <button class="btn danger" id="clr">Clear all data</button>
@@ -103,6 +108,8 @@
   <div id="hsw" hidden><textarea id="hst" class="ans" rows="4" style="margin-top:8px;font-size:.9rem" placeholder="Desktop: open the page, press Ctrl+U, select all, copy, paste here. Phone: type view-source: before the address, then copy all."></textarea><button type="button" class="btn gold" id="hsg" style="margin-top:8px">Detect from source</button></div>
   <label>Name<input id="fn" maxlength="350" placeholder="Leave empty to use the site name"><span id="fnc" class="hint" style="display:block;margin-top:4px"></span></label>
   <label>Notes <small>(optional)</small><textarea id="fno" class="ans" rows="2" maxlength="2000" placeholder="Episode, time, reminders..."></textarea></label>
+  <label>Remind me on <small>(optional)</small><input type="date" id="fdue"></label>
+  <div class="qd"><button type="button" class="btn" data-qd="0">Today</button><button type="button" class="btn" data-qd="1">Tomorrow</button><button type="button" class="btn" data-qd="3">In 3 days</button><button type="button" class="btn" data-qd="7">Next week</button><button type="button" class="btn" data-qd="x">Clear</button></div>
   <label>Category<input id="fc" list="cl" placeholder="Pick one or type a new one"></label>
   <div class="cp" id="cp"></div>
   <datalist id="cl"></datalist>
@@ -131,15 +138,22 @@
   <label>Picture shape<select id="thh"><option value="4/3">Standard</option><option value="16/9">Wide</option><option value="1/1">Square</option><option value="3/4">Tall</option></select></label></div>
   <div class="row"><button type="button" class="btn" id="thx">Reset</button><button type="button" class="btn gold" id="thc">Done</button></div></dialog>
 <dialog id="shd"><h2 id="sht">Share</h2><p class="hint" id="shn" style="display:block"></p>
+  <label class="chk"><input type="checkbox" id="shc" checked> Include categories</label>
   <label class="chk"><input type="checkbox" id="shi" checked> Include uploaded pictures (makes the file bigger)</label>
   <label>Link and file expire after<div class="bar" style="margin-top:6px"><select id="she" aria-label="Expiry"><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="360">6 hours</option><option value="1440">1 day</option><option value="10080">7 days</option><option value="0">Forever</option><option value="c">Custom (typed)</option></select><input id="shy" class="ans" placeholder="or type: 45m, 2h, 3d, forever"></div></label>
   <div class="row" style="justify-content:flex-start"><button type="button" class="btn gold" id="shf">Download share file</button><button type="button" class="btn" id="shl">Share link</button><button type="button" class="btn" id="shs2">Short link</button><button type="button" class="btn" id="shq">QR code</button><button type="button" class="btn" id="shx">Close</button></div>
+  <div id="shout" hidden><textarea id="sht2" class="ans" rows="3" readonly style="font-size:.8rem"></textarea><div class="row" style="justify-content:flex-start;margin-top:6px"><button type="button" class="btn" id="shcp">Copy</button><button type="button" class="btn" id="shsd">Send...</button></div></div>
   <p class="hint" id="shm" style="display:block"></p><div id="shqr" style="margin-top:10px"></div></dialog>
 <dialog id="rcv"><h2>You received links</h2><p class="hint" id="rcs" style="display:block"></p><div id="rcl"></div>
   <label class="chk"><input type="checkbox" id="rcd" checked> Skip links I already have</label>
   <div class="row"><button type="button" class="btn" id="rcx">Decline</button><button type="button" class="btn gold" id="rca">Accept</button></div></dialog>
 <dialog id="ihd"><h2>Install nnn reward</h2><p id="iht" class="hint" style="display:block"></p><ul id="ihl" class="chk2"></ul><div class="row"><button type="button" class="btn gold" id="ihx">Close</button></div></dialog>
 <div id="selbar" hidden><span id="selc">0 selected</span><button class="btn" id="sall">All</button><button class="btn" id="scat">Category</button><button class="btn" id="swat">Watched</button><button class="btn" id="spin">Pin</button><button class="btn" id="sshr">Share</button><button class="btn danger" id="sdel">Delete</button><button class="btn gold" id="sdone">Done</button></div>
+<dialog id="csd"><h2>Category style</h2><p class="hint" id="csn" style="display:block"></p>
+  <label>Emoji<input id="cse" class="ans" maxlength="4" placeholder="Type or pick one"></label><div class="emj" id="csp"></div>
+  <label>Colour<input type="color" id="csc"></label><div class="emj" id="csw"></div>
+  <p>Preview: <span class="cat" id="csv" style="margin:0"></span></p>
+  <div class="row"><button type="button" class="btn" id="csr">Reset</button><button type="button" class="btn" id="csx">Cancel</button><button type="button" class="btn gold" id="css">Save</button></div></dialog>
 <div id="toast" role="status"><span id="tt"></span><button id="undo" hidden>Undo</button></div>
 <script src="qr.js"></script>
 <script src="app.js"></script>

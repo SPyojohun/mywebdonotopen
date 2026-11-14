@@ -1,6 +1,6 @@
 const NUL=new Proxy(function(){},{get:(t,k)=>k===Symbol.toPrimitive?()=>'':k==='length'?0:NUL,set:()=>true,apply:()=>NUL,has:()=>true});
 const $=s=>document.querySelector(s)||(console.warn('nnn: missing element',s),NUL);
-const VER='45';
+const VER='46';
 const fold=s=>String(s||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f\u0E48-\u0E4C]/g,'');
 let db,links=[],cats=[],filter='All',editId=null;
 const NONE='Uncategorized';
@@ -9,14 +9,14 @@ const st=(n,m='readonly')=>db.transaction(n,m).objectStore(n);
 function open(){return new Promise((ok,no)=>{const r=indexedDB.open('nnn-reward',3);
  r.onupgradeneeded=()=>{const d=r.result;for(const[n,o]of[['links',{keyPath:'id',autoIncrement:true}],['cats',{keyPath:'name'}],['history',{keyPath:'id',autoIncrement:true}],['lists',{keyPath:'id',autoIncrement:true}]])if(!d.objectStoreNames.contains(n))d.createObjectStore(n,o)};
  r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-async function load(){{const all=await req(st('links').getAll()),lim=Date.now()-30*864e5;for(const x of all)if(x.del&&x.del<lim)await req(st('links','readwrite').delete(x.id));links=all.filter(l=>!l.del);trash=all.filter(l=>l.del&&l.del>=lim)}hist=await req(st('history').getAll());cats=(await req(st('cats').getAll())).map(c=>c.name).sort();render()}
+async function load(){{const all=await req(st('links').getAll()),lim=Date.now()-30*864e5;for(const x of all)if(x.del&&x.del<lim)await req(st('links','readwrite').delete(x.id));links=all.filter(l=>!l.del);trash=all.filter(l=>l.del&&l.del>=lim)}hist=await req(st('history').getAll());{const cr=await req(st('cats').getAll());CM=Object.fromEntries(cr.map(r=>[r.name,r]));cats=cr.map(c=>c.name).sort()};render()}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(t,undo){const e=$('#toast');$('#tt').textContent=t;$('#undo').hidden=!undo;$('#undo').onclick=()=>{undo();e.classList.remove('show')};e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),undo?5000:1400)}
 const ic=(d,f)=>`<svg viewBox="0 0 24 24" width="17" height="17" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const P={share:'<path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',play:'<path d="M7 4l13 8-13 8z"/>',open:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',q:'<path d="M4 6h12M4 12h12M4 18h8M18 15v6M15 18h6"/>',lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',del:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'};
 function host(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch{return u}}
 function imgSrc(l){if(l.image)return l.image;if(/\.(png|apng|jpe?g|jfif|gif|webp|avif|bmp|ico|svg)(\?|#|$)/i.test(l.url))return l.url;return 'https://image.thum.io/get/width/600/crop/400/'+l.url}
-const cc=n=>`hsl(${hue(n)} 85% 58%)`;
+const cc=n=>CM[n]&&CM[n].color||`hsl(${hue(n)} 85% 58%)`,cn=n=>(CM[n]&&CM[n].emoji?CM[n].emoji+' ':'')+n;
 function hue(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h}
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];let sig='';
 const nowMs=()=>Date.now();
@@ -32,7 +32,7 @@ function calRender(){const now=new Date(),y=calM.getFullYear(),m=calM.getMonth()
 const isVid=u=>/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u||'');
 function media(l){const v=l.video||(isVid(l.url)?l.url:'');
  if(v&&!l.image)return `<video src="${esc(v)}#t=0.1" muted playsinline draggable="false" preload="metadata" onerror="this.remove()"></video>`;
- return `<img src="${esc(imgSrc(l))}" alt="" draggable="false" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`}
+ return `<img src="${esc(imgSrc(l))}" alt="" draggable="false" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove();badCover(${l.id})">`}
 function card(l,g){
  const c=g?((l.id in dupOf?'Duplicate':'Original')+(why[l.id]?' · '+why[l.id]:'')+(l.created?' · '+new Date(l.created).toLocaleDateString(undefined,{day:'numeric',month:'short'}):'')):(l.category||NONE),n=l.name||host(l.url);
  return `<article class="card ${l.watched?'wd':''} ${SEL.has(l.id)?'sel':''}" data-id="${l.id}">${selMode?'<span class="cb">✓</span>':''}
@@ -41,9 +41,9 @@ function card(l,g){
  <div class="tools"><button class="icon pin ${l.pinned?'on':''}" data-a="pin" aria-label="${l.pinned?'Unpin':'Pin'}">${ic(P.star,l.pinned)}</button>
  <button class="icon" data-a="edit" aria-label="Edit">${ic(P.edit)}</button>
  <button class="icon del" data-a="del" aria-label="Delete">${ic(P.del)}</button></div>
- <div class="info"><h3 title="${esc(n)}">${esc(n)}</h3><small>${esc(host(l.url))}${l.watched?' · Watched':''}${l.dead?' · <b class="deadt">Dead?</b>':''}</small>${l.notes?`<small class="nt">${esc(l.notes)}</small>`:''}
- <div class="meta"><span class="mb"><button class="btn" data-a="open">${ic(P.open)}<span>Open</span></button><button class="btn" data-a="copy">${ic(P.copy)}<span>Copy</span></button><button class="btn" data-a="share" aria-label="Share">${ic(P.share)}</button></span><div class="row2"><span class="cat ${g?(l.id in dupOf?'dupe':'orig'):''}" ${g?'':'data-a="cat" title="Change category"'} ${g||!l.category?'':`style="--cc:${cc(l.category)}"`}>${esc(c)}</span><div class="stars">${[1,2,3,4,5].map(i=>`<button class="st ${(l.rating||0)>=i?'on':''}" data-a="rate" data-star="${i}" aria-label="${i} star">★</button>`).join('')}</div></div></div></div></article>`}
-let page=1,dupOf={},why={},hist=[],trash=[],selMode=false,VIS=[],GRP=[],cpIds=[],catManual=false;const PER=12,DUP='__dup';
+ <div class="info"><h3 title="${esc(n)}">${esc(n)}</h3><small>${esc(host(l.url))}${l.watched?' · Watched':''}${l.dead?' · <b class="deadt">Dead?</b>':''}${l.due?(()=>{const T=todayS();return' · <b class="'+(l.due<=T?'deadt':'duet')+'">'+(l.due<T?'Overdue':l.due===T?'Due today':'Due '+dueFmt(l.due))+'</b>'})():''}</small>${l.notes?`<small class="nt">${esc(l.notes)}</small>`:''}
+ <div class="meta"><span class="mb"><button class="btn" data-a="open">${ic(P.open)}<span>Open</span></button><button class="btn" data-a="copy">${ic(P.copy)}<span>Copy</span></button><button class="btn" data-a="share" aria-label="Share">${ic(P.share)}</button></span><div class="row2"><span class="cat ${g?(l.id in dupOf?'dupe':'orig'):''}" ${g?'':'data-a="cat" title="Change category"'} ${g||!l.category?'':`style="--cc:${cc(l.category)}"`}>${esc(g||!l.category?c:cn(c))}</span><div class="stars">${[1,2,3,4,5].map(i=>`<button class="st ${(l.rating||0)>=i?'on':''}" data-a="rate" data-star="${i}" aria-label="${i} star">★</button>`).join('')}</div></div></div>${fdate(l)}</div></article>`}
+let page=1,CM={},dupOf={},why={},hist=[],trash=[],selMode=false,VIS=[],GRP=[],cpIds=[],catManual=false;const PER=12,DUP='__dup';
 const nkey=u=>{try{const x=new URL(u.trim()),h=x.hostname.replace(/^www\./,'').toLowerCase(),yt=u.match(/(?:[?&]v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/);
  if(/youtube\.com|youtu\.be/.test(h)&&yt)return'yt:'+yt[1];
  const p=[...x.searchParams].filter(([k])=>!/^(utm_|fbclid|gclid|ref$|si$)/i.test(k)).sort();
@@ -58,10 +58,10 @@ function pager(p,t){if(t<2)return'';const s=new Set([1,t,p-1,p,p+1]);if(p<=3)[2,
  const n=[...s].filter(x=>x>=1&&x<=t).sort((a,b)=>a-b);let h=`<button data-p="${p-1}" ${p<2?'disabled':''} aria-label="Previous page">‹</button>`,last=0;
  for(const x of n){if(x-last>1)h+='<span>…</span>';h+=`<button data-p="${x}" class="${x===p?'on':''}">${x}</button>`;last=x}
  return h+`<button data-p="${p+1}" ${p>=t?'disabled':''} aria-label="Next page">›</button>`}
-function renderCP(){const v=$('#fc').value.trim();$('#cp').innerHTML=cats.map(c=>`<button type="button" class="chip ${v===c?'on':''}" data-pick="${esc(c)}">${esc(c)}</button>`).join('')}
+function renderCP(){const v=$('#fc').value.trim();$('#cp').innerHTML=cats.map(c=>`<button type="button" class="chip ${v===c?'on':''}" data-pick="${esc(c)}">${esc(cn(c))}</button>`).join('')}
 function render(){
  analyze();
- const q=fold($('#q').value.trim()),SORT={new:(a,b)=>b.id-a.id,old:(a,b)=>a.id-b.id,az:(a,b)=>(a.name||'').localeCompare(b.name||''),open:(a,b)=>(b.lastOpen||0)-(a.lastOpen||0),most:(a,b)=>(b.opens||0)-(a.opens||0),rate:(a,b)=>(b.rating||0)-(a.rating||0)},QF={all:()=>true,unw:l=>!l.watched,wat:l=>l.watched,nev:l=>!l.opens,pin:l=>l.pinned,r4:l=>(l.rating||0)>=4,wk:l=>l.created>Date.now()-7*864e5,...Object.fromEntries([1,2,3,4,5].map(n=>['s'+n,l=>(l.rating||0)===n])),s0:l=>!l.rating,dead:l=>l.dead};
+ const q=fold($('#q').value.trim()),SORT={new:(a,b)=>b.id-a.id,old:(a,b)=>a.id-b.id,az:(a,b)=>(a.name||'').localeCompare(b.name||''),open:(a,b)=>(b.lastOpen||0)-(a.lastOpen||0),most:(a,b)=>(b.opens||0)-(a.opens||0),rate:(a,b)=>(b.rating||0)-(a.rating||0)},QF=QFN,_qf0={all:()=>true,unw:l=>!l.watched,wat:l=>l.watched,nev:l=>!l.opens,pin:l=>l.pinned,r4:l=>(l.rating||0)>=4,wk:l=>l.created>Date.now()-7*864e5,...Object.fromEntries([1,2,3,4,5].map(n=>['s'+n,l=>(l.rating||0)===n])),s0:l=>!l.rating,dead:l=>l.dead};
  const isD=l=>l.id in dupOf,normal=links.filter(l=>!isD(l)),dups=links.filter(isD);
  if(filter===DUP&&!dups.length)filter='All';
  const match=l=>{if(!q)return true;const h=fold([l.name,l.url,l.category,l.notes].join(' '));return q.split(/\s+/).every(t=>h.includes(t))};
@@ -78,7 +78,7 @@ function render(){
  const count=c=>normal.filter(l=>(l.category||NONE)===c).length;
  const all=[...cats];if(normal.some(l=>!l.category))all.push(NONE);
  $('#chips').innerHTML=[`<button class="chip ${filter==='All'?'on':''}" data-c="All">All (${normal.length})</button>`,
-  ...all.map(c=>`<button class="chip ${filter===c?'on':''}" data-c="${esc(c)}" style="--cc:${cc(c)}">${esc(c)} (${count(c)})${cats.includes(c)?`<i data-r="${esc(c)}" title="Rename category">✎</i><i data-x="${esc(c)}" title="Delete category">×</i>`:''}</button>`),
+  ...all.map(c=>`<button class="chip ${filter===c?'on':''}" data-c="${esc(c)}" style="--cc:${cc(c)}">${esc(cn(c))} (${count(c)})${cats.includes(c)?`<i data-r="${esc(c)}" title="Rename category">✎</i><i data-x="${esc(c)}" title="Delete category">×</i>`:''}</button>`),
   dups.length?`<button class="chip dupchip ${filter===DUP?'on':''}" data-c="${DUP}">Duplicated (${dups.length})</button>`:'',
   `<button class="chip" id="nc">+ Category</button>`].join('');
  fillScopes();$('#cl').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
@@ -86,7 +86,7 @@ function render(){
  const fv=normal.filter(l=>l.rating>0).sort((a,b)=>b.rating-a.rating||(b.opens||0)-(a.opens||0)||(b.lastOpen||0)-(a.lastOpen||0)).slice(0,6);
  $('#favs').innerHTML=fv.map((l,i)=>`<div class="rk"><span class="rkn">#${i+1}</span>${card(l)}</div>`).join('')||'<div class="empty"><b>No favourites yet</b>Tap the stars on a link to rank it here.</div>';
  $('#pins').innerHTML=pins.map(l=>card(l)).join('')||'<div class="empty"><b>No pinned links</b>Tap the star on a link to keep it here.</div>';
- renderCats();selUpd();renderBackup();trashHtml();
+ renderCats();selUpd();renderBackup();trashHtml();renderColls();renderDue();renderToday();
  $('#hlist').innerHTML=histHtml();
  $('#stats').innerHTML=`<div>Links<b>${normal.length}</b></div><div>Categories<b>${cats.length}</b></div><div>Pinned<b>${pins.length}</b></div><div>Duplicates<b>${dups.length}</b></div>`}
 async function addCat(n){n=n.trim();if(n&&n!==NONE&&!cats.includes(n))await req(st('cats','readwrite').put({name:n}))}
@@ -155,13 +155,13 @@ async function backfill(){if(!navigator.onLine)return;let ch=0;
  if(ch)load()}
 function openForm(l){editId=l?l.id:null;detected={};pickedImg='';candList=l?.cands||[];upImg=/^data:/.test(l?.image||'')?l.image:'';$('#upx').hidden=!upImg;nameAuto=!l;setPv(l?.image||'','',l?.video);$('#dt').textContent=l?'Edit link':'Add link';
  $('#fn').value=l?.name||'';$('#fu').value=l?.url||'';$('#fc').value=l?.category||(filter!=='All'&&filter!==NONE&&filter!==DUP?filter:'')||(l?'':localStorage.getItem('nnn-lastcat')||'');$('#fi').value=l?.image||'';
-$('#fw').checked=!!l?.watched;$('#fno').value=l?.notes||'';$('#fnc').textContent=($('#fn').value.length)+'/350';catManual=false;$('#many').hidden=!!l;showCands(candList,l?.image);
+$('#fw').checked=!!l?.watched;$('#fno').value=l?.notes||'';$('#fdue').value=l?.due||'';$('#fnc').textContent=($('#fn').value.length)+'/350';catManual=false;$('#many').hidden=!!l;showCands(candList,l?.image);
 renderCP();$('#dupnote').hidden=true;$('#dlg').showModal();if(!l)navigator.clipboard?.readText().then(t=>{if(/^https?:\/\//i.test(t.trim())&&!$('#fu').value)$('#fu').value=t.trim()}).catch(()=>{});$('#fu').focus()}
 $('#f').addEventListener('submit',async e=>{await pending;
  const cat=$('#fc').value.trim()||autoCat();await addCat(cat);try{localStorage.setItem('nnn-lastcat',cat)}catch{}
  const old=links.find(x=>x.id===editId)||{};
  const U=$('#fu').value.trim(),ci=$('#fi').value.trim(),same=old.url===U,img=upImg||pickedImg||(isVid(ci)?'':(ci||detected.image||(same&&!/^data:/.test(old.image||'')?old.image:'')||'')),vid=img?'':(isVid(ci)?ci:(detected.video||(same?old.video:'')||''));
- const rec={...old,name:($('#fn').value.trim()||detected.title||host(U)).slice(0,350),url:U,category:cat,image:img,video:vid,cands:detected.images||old.cands||[],videos:detected.videos||old.videos||[],embeds:detected.embeds||old.embeds||[],watched:$('#fw').checked,notes:$('#fno').value.trim(),tried:'v3'};
+ const rec={...old,name:($('#fn').value.trim()||detected.title||host(U)).slice(0,350),url:U,category:cat,image:img,video:vid,cands:detected.images||old.cands||[],videos:detected.videos||old.videos||[],embeds:detected.embeds||old.embeds||[],watched:$('#fw').checked,notes:$('#fno').value.trim(),due:$('#fdue').value||'',tried:'v3'};
  if(!editId){delete rec.id;rec.created=nowMs()}
  const dupNew=links.some(x=>x.id!==editId&&sameAs(x,rec));await req(st('links','readwrite').put(rec));await load();toast(dupNew?'Saved. Moved to Duplicated':'Saved')});
 $('#cancel').onclick=()=>$('#dlg').close();
@@ -183,9 +183,12 @@ document.addEventListener('click',async e=>{
  if(e.target.id==='bkl'){try{localStorage.setItem('nnn-snooze',Date.now()+864e5)}catch{}return renderBackup()}
  if(e.target.id==='rsb')return $('#imp').click();
  if(e.target.id==='rsx'){try{localStorage.setItem('nnn-had','0')}catch{}return renderBackup()}
+ const vx=e.target.closest('[data-vx]');if(vx){COLL.splice(+vx.dataset.vx,1);saveColl();renderColls();return}
+ const vw=e.target.closest('[data-vw]');if(vw){applyView(COLL[+vw.dataset.vw]);return}
+ const sz=e.target.closest('[data-snz],[data-dn]');if(sz){const l=byId(+(sz.dataset.snz||sz.dataset.dn));if(l){await put({...l,due:sz.dataset.snz?addD(1):''});await load()}return}
  const tb=e.target.closest('[data-tr],[data-tx]');if(tb){const l=trash.find(x=>x.id==(tb.dataset.tr||tb.dataset.tx));if(!l)return;if(tb.dataset.tx){await req(st('links','readwrite').delete(l.id))}else{const{del,...r}=l;await put(r)}return load()}
  const r=e.target.closest('[data-r]');
- if(r){e.stopPropagation();const o=r.dataset.r,n=(prompt('Rename category',o)||'').trim();if(!n||n===o)return;await addCat(n);await req(st('cats','readwrite').delete(o));for(const l of links.filter(l=>l.category===o))await req(st('links','readwrite').put({...l,category:n}));if(filter===o)filter=n;return load()}
+ if(r){e.stopPropagation();const o=r.dataset.r,n=(prompt('Rename category',o)||'').trim();if(!n||n===o)return;if(!cats.includes(n))await req(st('cats','readwrite').put({...(CM[o]||{}),name:n}));await req(st('cats','readwrite').delete(o));for(const l of links.filter(l=>l.category===o))await req(st('links','readwrite').put({...l,category:n}));if(filter===o)filter=n;return load()}
  const x=e.target.closest('[data-x]');
  if(x){e.stopPropagation();const c=x.dataset.x;if(!confirm(`Delete category "${c}"? Its links stay, but become Uncategorized.`))return;
   await req(st('cats','readwrite').delete(c));
@@ -207,11 +210,11 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
  document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==t.dataset.v)});
 $('#exp').onclick=()=>{try{localStorage.setItem('nnn-lastexp',Date.now())}catch{}const a=document.createElement('a');
- a.href=URL.createObjectURL(new Blob([JSON.stringify({cats,links},null,1)],{type:'application/json'}));
+ a.href=URL.createObjectURL(new Blob([JSON.stringify({cats,links,catMeta:CM},null,1)],{type:'application/json'}));
  a.download='nnn-reward-backup.json';a.click()};
 $('#imp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());
- for(const c of d.cats||[])await addCat(c);
+ for(const c of d.cats||[])await addCat(c);for(const[n,m]of Object.entries(d.catMeta||{}))if(m&&(m.emoji||m.color))await req(st('cats','readwrite').put({name:n,emoji:m.emoji||'',color:m.color||''}));
  for(const l of d.links||[]){delete l.id;await req(st('links','readwrite').add(l))}
  await load();await load();toast('Imported')}catch{toast('Invalid backup file')}e.target.value=''};
 function tick(){
@@ -221,7 +224,7 @@ function tick(){
  {const s=new Date(t.getFullYear(),10,1),p=Math.max(0,Math.min(100,(now-s)/(t-s)*100));$('#pf').style.strokeDashoffset=314.16*(1-p/100);$('#pp').textContent=Math.floor(p)+'%'}$('#cdLabel').textContent=`${dayName()} · Until 1 December ${t.getFullYear()}`;
  $('#cd').innerHTML=p.map(([v,l])=>`<div><b>${String(v).padStart(2,'0')}</b><span>${l}</span></div>`).join('')}
 tick();setInterval(tick,1000);
-open().then(d=>{db=d;load().then(()=>{shareIn();goIn();hashIn();return backfill()})});
+open().then(d=>{db=d;load().then(()=>{shareIn();goIn();hashIn();dueNotify();return backfill()})});
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
 $('#theme').onclick=openTheme;
@@ -285,7 +288,7 @@ $('#bg').onclick=async()=>{const u=urls(),c=$('#bc').value.trim();if(!u.length)r
  for(const x of u)await req(st('links','readwrite').add({url:x,name:'',category:c,image:'',video:'',created:t++}));
  $('#bk').close();await load();backfill();toast(u.length+' links added')};
 let cpLink=0;
-function openCpk(x){cpIds=Array.isArray(x)?x:[x.id];const l=byId(cpIds[0])||{},one=cpIds.length===1;$('#cpn').value='';$('#cpkc').innerHTML=[`<button class="chip ${one&&!l.category?'on':''}" data-cp="">No category</button>`,...cats.map(c=>`<button class="chip ${one&&l.category===c?'on':''}" data-cp="${esc(c)}" style="--cc:${cc(c)}">${esc(c)}</button>`)].join('');$('#cpk').showModal()}
+function openCpk(x){cpIds=Array.isArray(x)?x:[x.id];const l=byId(cpIds[0])||{},one=cpIds.length===1;$('#cpn').value='';$('#cpkc').innerHTML=[`<button class="chip ${one&&!l.category?'on':''}" data-cp="">No category</button>`,...cats.map(c=>`<button class="chip ${one&&l.category===c?'on':''}" data-cp="${esc(c)}" style="--cc:${cc(c)}">${esc(cn(c))}</button>`)].join('');$('#cpk').showModal()}
 async function setCat(c){const ls=cpIds.map(byId).filter(Boolean);if(!ls.length)return;await addCat(c);for(const l of ls)await put({...l,category:c});$('#cpk').close();await load();toast((ls.length>1?ls.length+' links':'Link')+' moved to '+(c||'No category'))}
 $('#cpkc').onclick=e=>{const b=e.target.closest('[data-cp]');if(b)setCat(b.dataset.cp)};
 $('#cps').onclick=()=>{const n=$('#cpn').value.trim();if(n)setCat(n)};$('#cpx').onclick=()=>$('#cpk').close();
@@ -335,13 +338,13 @@ async function packLink(D){const j=new TextEncoder().encode(JSON.stringify(D));i
 async function unpackLink(t){return v2(await unpackRaw(t))}
 async function unpackRaw(t){const k=t.slice(0,2),b=unb64u(t.slice(2));if(k==='z.'&&!window.DecompressionStream)throw new Error('This browser is too old to open this link. Ask for a share file instead.');if(k==='z.')return JSON.parse(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text());return JSON.parse(new TextDecoder().decode(b))}
 const v2=d=>d&&d.v===2?{exp:d.e?d.e*6e4:0,cats:d.c||[],links:d.l.map(a=>({name:a[0]||'',url:/^https?:\/\//.test(a[1])?a[1]:'https://'+a[1],category:a[2]||''}))}:d;
-function payload(list,withImg){const lk=list.map(l=>{const o={name:l.name||'',url:l.url,category:l.category||'',image:l.image&&(withImg||!l.image.startsWith('data:'))?l.image:'',watched:!!l.watched,notes:l.notes||'',rating:l.rating||0};if(l.video)o.video=l.video;if(l.pvu)o.pvu=l.pvu;if(l.videos&&l.videos.length)o.videos=l.videos.slice(0,6);return o});
- return{v:1,app:'nnn-reward',t:Date.now(),exp:shareMs()?Date.now()+shareMs():0,cats:[...new Set([...lk.map(x=>x.category).filter(Boolean),...SHCATS])],links:lk}}
+function payload(list,withImg){const lk=list.map(l=>{const o={name:l.name||'',url:l.url,category:catOn()?l.category||'':'',image:l.image&&(withImg||!l.image.startsWith('data:'))?l.image:'',watched:!!l.watched,notes:l.notes||'',rating:l.rating||0};if(l.video)o.video=l.video;if(l.pvu)o.pvu=l.pvu;if(l.videos&&l.videos.length)o.videos=l.videos.slice(0,6);return o});
+ return{v:1,app:'nnn-reward',t:Date.now(),exp:shareMs()?Date.now()+shareMs():0,cats:catOn()?[...new Set([...lk.map(x=>x.category).filter(Boolean),...SHCATS])]:[],links:lk}}
 function shareHtml(D){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim(),
  map={__BG__:v('--bg'),__CARD__:v('--glass'),__TX__:v('--tx'),__MUT__:v('--mut'),__LINE__:v('--line'),__ACC__:v('--gold'),__ON__:v('--on'),__APP__:new URL('./',location.href).href,__ORIGIN__:location.origin==='null'?'*':location.origin};
  let h=SHTPL;for(const k in map)h=h.split(k).join(map[k]);return h.split('__DATA__').join(JSON.stringify(D).replace(/</g,'\\u003c'))}
 let SH=[],SHCATS=[];
-function shareSet(list,all){SH=list;SHCATS=all?[...cats]:[];$('#sht').textContent=list.length===1?'Share this link':'Share '+list.length+' links';$('#shn').textContent=list.length===1?(list[0].name||host(list[0].url)):'';$('#shm').textContent='';SHORT='';$('#shqr').innerHTML='';syncExp();$('#shd').showModal()}
+function shareSet(list,all){SH=list;SHCATS=all?[...cats]:[];$('#shout').hidden=true;$('#sht2').value='';$('#sht').textContent=list.length===1?'Share this link':'Share '+list.length+' links';$('#shn').textContent=list.length===1?(list[0].name||host(list[0].url)):'';$('#shm').textContent='';SHORT='';$('#shqr').innerHTML='';syncExp();$('#shd').showModal()}
 $('#shf').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([shareHtml(payload(SH,$('#shi').checked))],{type:'text/html'}));a.download='nnn-reward-share.html';a.click();$('#shm').textContent='File saved. Send it to the other device and open it there in a browser. It works '+expText()+'.'};
 $('#shl').onclick=async()=>{const u=new URL('./',location.href).href+'#share='+await packLink(compact(SH));
  if(u.length>12000){$('#shm').textContent='Too many links for a link ('+u.length+' characters). Use the share file instead.';return}
@@ -368,11 +371,10 @@ $('#rca').onclick=async()=>{if(!RC)return;if(RC.exp&&Date.now()>RC.exp+12e4){RC=
 $('#rcx').onclick=()=>{RC=null;$('#rcv').close()};
 $('#rfb').onclick=()=>$('#rff').click();
 $('#rff').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const t=await f.text(),m=t.match(/<script type="application\/json" id="d">([\s\S]*?)<\/script>/);showReceive(JSON.parse(m?m[1]:t))}catch{toast('Could not read that file')}};
-$('#rlb').onclick=async()=>{const m=$('#rli').value.match(/#share=(\S+)/);if(!m)return toast('Paste a full share link');try{showReceive(await unpackLink(m[1]))}catch(e){toast(e&&e.message&&e.message.startsWith('This browser')?e.message:'That link could not be read')}};
 addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nnn-share')showReceive(d.data)});
 function hashIn(){const h=location.hash,clear=()=>history.replaceState(null,'',location.pathname+location.search);
  if(h==='#receive'){if(window.opener)window.opener.postMessage({type:'nnn-ready'},'*');return clear()}
- const m=h.match(/^#share=(\S+)/);if(m){clear();unpackLink(m[1]).then(showReceive).catch(e=>toast(e&&e.message&&e.message.startsWith('This browser')?e.message:'That share link could not be read'))}}
+ if(/^#share=/.test(h)){clear();receiveText(h).then(showReceive).catch(e=>toast(e&&e.message&&e.message.startsWith('This browser')?e.message:'That share link could not be read'))}}
 
 if(matchMedia('(pointer:coarse)').matches)$('#q').placeholder='Search your links';
 
@@ -425,14 +427,14 @@ function cwCount(){const q=$('#cwq').value.trim(),m=matchLinks($('#cwq').value,$
 function cwPreview(){const m=cwShown();cwCount();
  $('#cwp').innerHTML=m.map(l=>`<label class="ri cwr"><input type="checkbox" data-cw="${l.id}" ${cwOff.has(l.id)?'':'checked'}><div><b>${esc(l.name||host(l.url))}</b><small>${esc(l.category||'No category')}</small></div></label>`).join('')}
 function renderCats(){const cnt=c=>links.filter(l=>!(l.id in dupOf)&&(l.category||'')===c).length,o=cats.map(c=>`<option>${esc(c)}</option>`).join('');
- $('#catlist').innerHTML=[...cats,''].map(c=>`<div class="cr"><span class="dotc" style="background:${c?cc(c):'var(--mut)'}"></span><b>${esc(c||NONE)}</b><small>${cnt(c)} links</small><button class="btn" data-cv="${esc(c||NONE)}">View</button>${c?`<button class="btn" data-cn="${esc(c)}">Rename</button><button class="btn" data-cx="${esc(c)}">Delete</button>`:''}</div>`).join('');
+ $('#catlist').innerHTML=[...cats,''].map(c=>`<div class="cr"><span class="dotc" style="background:${c?cc(c):'var(--mut)'}"></span><b>${esc(c?cn(c):NONE)}</b><small>${cnt(c)} links</small><button class="btn" data-cv="${esc(c||NONE)}">View</button>${c?`<button class="btn" data-cs="${esc(c)}">Style</button><button class="btn" data-cn="${esc(c)}">Rename</button><button class="btn" data-cx="${esc(c)}">Delete</button>`:''}</div>`).join('');
  $('#mf').innerHTML=o;$('#mt').innerHTML=o;const cur=$('#cwd').value;$('#cwd').innerHTML='<option value="">Choose a category...</option>'+o+'<option value="__new">+ Create new category...</option>';
  if([...$('#cwd').options].some(x=>x.value===cur))$('#cwd').value=cur;$('#cwc').hidden=$('#cwd').value!=='__new';
  $('#rules').innerHTML=RULES.map((r,i)=>`<div class="cr"><b>${esc(r.w)}</b><small>${r.where}${r.whole?', whole word':''} → ${esc(r.c)}</small><button class="btn" data-rd="${i}">Remove</button></div>`).join('')||'<p class="hint" style="display:block">No rules yet. Filter a word, choose a category and press Save as rule.</p>';cwPreview()}
 async function setCats(pairs,msg,undoNew){const prev=pairs.map(([l])=>[l.id,l.category||'']);
  for(const[l,c]of pairs){if(c)await addCat(c);await req(st('links','readwrite').put({...l,category:c}))}await load();
  toast(msg,async()=>{for(const[id,c]of prev){const l=byId(id);if(l)await req(st('links','readwrite').put({...l,category:c}))}if(undoNew)await req(st('cats','readwrite').delete(undoNew));await load()})}
-async function renameCat(o,n){n=n.trim();if(!n||n===o)return;await addCat(n);for(const l of links.filter(l=>l.category===o))await req(st('links','readwrite').put({...l,category:n}));await req(st('cats','readwrite').delete(o));if(filter===o)filter=n;await load();toast('Renamed to "'+n+'"')}
+async function renameCat(o,n){n=n.trim();if(!n||n===o)return;if(!cats.includes(n))await req(st('cats','readwrite').put({...(CM[o]||{}),name:n}));for(const l of links.filter(l=>l.category===o))await req(st('links','readwrite').put({...l,category:n}));await req(st('cats','readwrite').delete(o));if(filter===o)filter=n;await load();toast('Renamed to "'+n+'"')}
 ['cwq','cws','cwu','cww'].forEach(i=>$('#'+i).addEventListener('input',()=>{cwOff.clear();cwPreview()}));
 $('#cwd').onchange=()=>{$('#cwc').hidden=$('#cwd').value!=='__new';if(!$('#cwc').hidden)$('#cwc').focus()};
 $('#cwp').addEventListener('change',e=>{const c=e.target.closest('[data-cw]');if(!c)return;c.checked?cwOff.delete(+c.dataset.cw):cwOff.add(+c.dataset.cw);cwCount()});
@@ -440,6 +442,7 @@ $('#cwall').onclick=()=>{cwOff.clear();cwPreview()};$('#cwnone').onclick=()=>{cw
 const addNewCat=async()=>{const n=$('#ncn').value.trim();if(!n)return toast('Type a category name');if(cats.includes(n))return toast('That category already exists');await addCat(n);$('#ncn').value='';await load();toast('Category "'+n+'" added')};
 $('#nca').onclick=addNewCat;$('#ncn').addEventListener('keydown',e=>{if(e.key==='Enter')addNewCat()});
 $('#cats').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+ if(d.cs)return openStyle(d.cs);
  if(d.cv){filter=d.cv;page=1;document.querySelector('[data-v=links]').click();return render()}
  if(d.cn){const n=prompt('New name (an existing name merges the two)',d.cn);if(n)await renameCat(d.cn,n);return}
  if(d.cx){if(!confirm('Delete "'+d.cx+'"? Its links stay, with no category.'))return;const ps=links.filter(l=>l.category===d.cx).map(l=>[l,'']);await req(st('cats','readwrite').delete(d.cx));if(filter===d.cx)filter='All';await setCats(ps,'Category deleted');return}
@@ -453,8 +456,8 @@ $('#cats').addEventListener('click',async e=>{const b=e.target.closest('button')
 
 function openUrl(u){const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove()}
 
-const compact=list=>({v:2,...(SHCATS.length?{c:SHCATS}:{}),e:shareMs()?Math.floor((Date.now()+shareMs())/6e4):0,l:list.map(l=>{const a=[l.name||'',l.url.replace(/^https:\/\//,''),l.category||''];while(a.length>2&&!a[a.length-1])a.pop();return a})});
-$('#shs2').onclick=async()=>{const u=new URL('./',location.href).href+'#share='+await packLink(compact(SH));
+const compact=(list,withC=true)=>({v:2,...(withC&&SHCATS.length&&catOn()?{c:SHCATS}:{}),e:shareMs()?Math.floor((Date.now()+shareMs())/6e4):0,l:list.map(l=>{const a=[l.name||'',l.url.replace(/^https:\/\//,''),catOn()?l.category||'':''];while(a.length>2&&!a[a.length-1])a.pop();return a})});
+$('#shs2').onclick=async()=>{const P=await buildLinks();if(P.length>1){$('#shm').textContent='Too much data for one short link. Use Share link (it makes '+P.length+' links) or the share file.';return}const u=P[0];
  if(!confirm('This sends the link, including the list of links inside it, to is.gd to shorten it. Continue?'))return;
  $('#shm').textContent='Shortening...';let s='';
  for(const h of ['is.gd','v.gd']){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),6000),r=await fetch('https://'+h+'/create.php?format=json&url='+encodeURIComponent(u),{signal:c.signal});clearTimeout(t);const j=await r.json();if(j.shorturl){s=j.shorturl;break}}catch{}}
@@ -527,3 +530,75 @@ $('#favall').onclick=()=>{$('#qf').value='r4';$('#sort').value='rate';page=1;fil
  let tried=0;try{tried=sessionStorage.getItem('nnn-fix')}catch{}
  if(!tried){try{sessionStorage.setItem('nnn-fix','1')}catch{}return fix()}
  const b=document.createElement('div');b.id='verb';b.innerHTML='Some app files are out of date (page '+(m?'v'+m.content:'is old')+', script v'+VER+'). Upload ALL files again, then <button id="verfix" class="btn">Clear cache and reload</button>';document.body.prepend(b);document.getElementById('verfix').onclick=fix})();
+
+
+const emojis=['🎬','🎵','🎮','📚','⭐','🔥','🐱','🍜','✈️','💡','🎨','😂','💪','🧠','🛒','🏠'],swatches=['#ff7a1a','#ff4d6d','#ffc23d','#3ddba4','#4da3ff','#7c5cff','#c05cff','#e8e8e8'];
+function hsl2hex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
+let csName='';
+const csPrev=()=>{const e=$('#cse').value.trim(),c=$('#csc').value;$('#csv').textContent=(e?e+' ':'')+csName;$('#csv').style.cssText=`border:1px solid ${c};color:${c};background:transparent`};
+function openStyle(n){csName=n;const m=CM[n]||{};$('#csn').textContent=n;$('#cse').value=m.emoji||'';$('#csc').value=m.color||hsl2hex(hue(n),85,58);
+ $('#csp').innerHTML=emojis.map(e=>`<button type="button" class="chip" data-em="${e}">${e}</button>`).join('');$('#csw').innerHTML=swatches.map(c=>`<button type="button" class="swb" data-sw="${c}" style="background:${c}" aria-label="${c}"></button>`).join('');csPrev();$('#csd').showModal()}
+$('#cse').oninput=csPrev;$('#csc').oninput=csPrev;
+$('#csp').onclick=e=>{const b=e.target.closest('[data-em]');if(b){$('#cse').value=b.dataset.em;csPrev()}};
+$('#csw').onclick=e=>{const b=e.target.closest('[data-sw]');if(b){$('#csc').value=b.dataset.sw;csPrev()}};
+$('#css').onclick=async()=>{const c=$('#csc').value;await req(st('cats','readwrite').put({name:csName,emoji:$('#cse').value.trim().slice(0,4),color:c===hsl2hex(hue(csName),85,58)?'':c}));$('#csd').close();await load();toast('Style saved')};
+$('#csr').onclick=async()=>{await req(st('cats','readwrite').put({name:csName}));$('#csd').close();await load();toast('Style reset')};
+$('#csx').onclick=()=>$('#csd').close();
+let COLL=[];try{COLL=JSON.parse(localStorage.getItem('nnn-colls')||'[]')}catch{}
+const saveColl=()=>{try{localStorage.setItem('nnn-colls',JSON.stringify(COLL))}catch{}};
+const QFN={all:()=>true,unw:l=>!l.watched,wat:l=>l.watched,nev:l=>!l.opens,pin:l=>l.pinned,r4:l=>(l.rating||0)>=4,wk:l=>l.created>Date.now()-7*864e5,due:l=>!!l.due,...Object.fromEntries([1,2,3,4,5].map(n=>['s'+n,l=>(l.rating||0)===n])),s0:l=>!l.rating,dead:l=>l.dead};
+function viewList(v){const q=fold((v.q||'').trim()),f=QFN[v.qf]||QFN.all;return links.filter(l=>!(l.id in dupOf)&&(v.filter==='All'||(l.category||NONE)===v.filter)&&(!q||q.split(/\s+/).every(t=>fold([l.name,l.url,l.category,l.notes].join(' ')).includes(t)))&&f(l))}
+function renderColls(){const h=COLL.map((v,i)=>`<button class="chip" data-vw="${i}">${esc(v.name)} (${viewList(v).length})<i data-vx="${i}" title="Delete view">×</i></button>`).join('');$('#colls').innerHTML=h;$('#colls').hidden=!h;$('#hcolls').innerHTML=h;$('#hcw').hidden=!h}
+function applyView(v){$('#q').value=v.q||'';filter=v.filter||'All';$('#qf').value=v.qf||'all';$('#sort').value=v.sort||'new';page=1;document.querySelector('[data-v=links]').click();render()}
+$('#svw').onclick=()=>{const n=(prompt('Name this view (it saves your search, category, filter and sort)')||'').trim();if(!n)return;COLL.push({name:n.slice(0,40),q:$('#q').value,filter,qf:$('#qf').value,sort:$('#sort').value});saveColl();renderColls();toast('View saved')};
+const ymd=d=>d.toLocaleDateString('en-CA'),todayS=()=>ymd(new Date()),addD=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)},dueFmt=s=>new Date(s+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short'});
+function renderDue(){const T=todayS(),d=links.filter(l=>l.due&&l.due<=T&&!(l.id in dupOf)).sort((a,b)=>a.due.localeCompare(b.due));$('#duew').hidden=!d.length;
+ $('#duel').innerHTML=d.slice(0,6).map(l=>`<div class="qi">${card(l)}<div class="qc"><span>${l.due<T?'Overdue':'Due today'}</span><button class="btn" data-snz="${l.id}">Tomorrow</button><button class="btn" data-dn="${l.id}">Done</button></div></div>`).join('')+(d.length>6?`<p class="hint" style="display:block">+ ${d.length-6} more. Use the filter "With a reminder" on the Links page.</p>`:'');
+ $('#notib').hidden=!(d.length&&'Notification' in window&&Notification.permission==='default')}
+document.querySelectorAll('[data-qd]').forEach(b=>b.onclick=()=>{$('#fdue').value=b.dataset.qd==='x'?'':addD(+b.dataset.qd)});
+async function dueNotify(){if(!('Notification' in window)||Notification.permission!=='granted')return;const T=todayS(),n=links.filter(l=>l.due&&l.due<=T).length;if(!n)return;
+ try{if(localStorage.getItem('nnn-notified')===T)return;localStorage.setItem('nnn-notified',T)}catch{}
+ const o={body:n+' link'+(n>1?'s':'')+' due today',icon:'icon-192.png',tag:'nnn-due'};try{const r=await navigator.serviceWorker.getRegistration();r?r.showNotification('nnn reward',o):new Notification('nnn reward',o)}catch{}}
+$('#notib').onclick=async()=>{const r=await Notification.requestPermission();toast(r==='granted'?'Reminders will pop up when you open the app':'Notifications are blocked in your browser');renderDue();dueNotify()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)dueNotify()});
+const loadsImg=u=>new Promise(r=>{const i=new Image(),t=setTimeout(()=>r(false),8000);i.referrerPolicy='no-referrer';i.onload=()=>{clearTimeout(t);r(i.naturalWidth>=200&&i.naturalHeight>=110)};i.onerror=()=>{clearTimeout(t);r(false)};i.src=u});
+async function fixCover(l,known){if(!l.image||l.image.startsWith('data:'))return false;if(!known&&await loadsImg(l.image))return false;
+ for(const u of l.cands||[])if(u!==l.image&&await loadsImg(u))return{...l,image:u};
+ try{const m=await getMeta(l.url);for(const u of[m.image,...(m.images||[])])if(u&&u!==l.image&&await loadsImg(u))return{...l,image:u,cands:m.images||l.cands}}catch{}
+ return{...l,image:'',coverFail:Date.now()}}
+const BAD=new Map(),TRIEDC=new Set();let badT=0,autoN=0;
+function badCover(id){const l=byId(id);if(!l||!l.image||l.image.startsWith('data:')||TRIEDC.has(id)||autoN>=12)return;BAD.set(id,l.image);clearTimeout(badT);
+ badT=setTimeout(async()=>{const ids=[...BAD];BAD.clear();let ch=0;for(const[i,u0]of ids){const x=byId(i);if(!x||TRIEDC.has(i)||x.image!==u0)continue;TRIEDC.add(i);autoN++;const r=await fixCover(x,true);if(r){await put(r);ch++}}if(ch)await load()},2500)}
+$('#cvr').onclick=async()=>{if(!navigator.onLine)return toast('You are offline');const L=links.filter(l=>!(l.id in dupOf)&&l.image&&!l.image.startsWith('data:')),b=$('#cvr');let i=0,n=0,fx=0,cl=0;
+ const w=async()=>{while(i<L.length){const l=L[i++],r=await fixCover(l);n++;b.textContent='Checking '+n+'/'+L.length;if(r){await put(r);r.image?fx++:cl++}}};
+ await Promise.all([w(),w(),w(),w()]);b.textContent='Refresh covers';await load();toast(fx+cl?fx+' cover'+(fx===1?'':'s')+' replaced, '+cl+' removed (no working picture found)':'All covers load fine')};
+const fdate=l=>{if(!l.created||l.created<1e12)return'';const d=new Date(l.created),p=n=>String(n).padStart(2,'0');return`<div class="foot2"><span>${d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}</span><span>${p(d.getHours())}:${p(d.getMinutes())}</span></div>`};
+let TDO=false;
+function todayPick(){const T=todayS();let sv=null;try{sv=JSON.parse(localStorage.getItem('nnn-today')||'null')}catch{}
+ const pool=links.filter(l=>!(l.id in dupOf));let ids=(sv&&sv.d===T?sv.ids:[]).filter(id=>pool.some(l=>l.id===id));
+ if(ids.length<Math.min(10,pool.length)){const sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]),rest=pool.filter(l=>!ids.includes(l.id));
+  ids=[...ids,...[...sh(rest.filter(l=>!l.watched)),...sh(rest.filter(l=>l.watched))].slice(0,10-ids.length).map(l=>l.id)];try{localStorage.setItem('nnn-today',JSON.stringify({d:T,ids}))}catch{}}
+ return ids.map(byId).filter(Boolean)}
+function renderToday(){const L=todayPick(),t=$('#today');
+ t.innerHTML=L.map(l=>`<article class="card mini ${l.watched?'wd':''}" data-id="${l.id}"><a class="thumb" href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.name||host(l.url))}">${media(l)}</a><h3 title="${esc(l.name||host(l.url))}">${esc(l.name||host(l.url))}</h3><button class="btn" data-a="open">Open</button></article>`).join('')||'<div class="empty"><b>Nothing yet</b>Add some links and your list for today appears here.</div>';
+ fitToday();setTimeout(fitToday,600)}
+function fitToday(){const t=$('#today'),k=[...t.children].filter(x=>x.classList.contains('mini'));if(!k.length){$('#tdmore').hidden=true;return}
+ const top=k[0].offsetTop,hid=k.filter(x=>x.offsetTop>top+4).length;t.style.maxHeight=TDO?'none':(k[0].offsetHeight+2)+'px';t.classList.toggle('open',TDO);$('#tdmore').hidden=!hid&&!TDO;$('#tdmore').textContent=TDO?'Show less':'More... (+'+hid+')'}
+$('#tdmore').onclick=()=>{TDO=!TDO;fitToday()};
+$('#tdsh').onclick=()=>{try{localStorage.removeItem('nnn-today')}catch{}TDO=false;renderToday();toast('New list picked')};
+let rzT=0;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(fitToday,150)});
+const catOn=()=>$('#shc').checked;
+async function buildLinks(){const base=new URL('./',location.href).href+'#share=',MAX=3000,mk=(l,c)=>packLink(compact(l,c));
+ const whole=base+await mk(SH,true);if(whole.length<=MAX)return[whole];
+ const split=async(l,first)=>{const t=base+await mk(l,first);if(t.length<=MAX||l.length===1)return[t];const h=Math.ceil(l.length/2);return[...await split(l.slice(0,h),first),...await split(l.slice(h),false)]};
+ return split(SH,true)}
+$('#shl').onclick=async()=>{try{$('#shm').textContent='Building the link...';const L=await buildLinks();
+ if(L.length>40){$('#shm').textContent='That is too much data for links ('+L.length+' parts). Use the share file instead.';return}
+ $('#sht2').value=L.join('\n');$('#shout').hidden=false;let ok=false;try{await navigator.clipboard.writeText(L.join('\n'));ok=true}catch{}
+ $('#shm').textContent=(L.length>1?L.length+' links were needed because there is a lot of data. Send all of them (one per line, in any order). ':'Link ready ('+L[0].length+' characters). ')+(ok?'Copied. ':'Press Copy. ')+'Valid '+expText()+'.'}catch(e){$('#shm').textContent='Could not build the link ('+(e&&e.message||'error')+'). Use the share file instead.'}};
+$('#shcp').onclick=async()=>{try{await navigator.clipboard.writeText($('#sht2').value);toast('Copied')}catch{$('#sht2').select();try{document.execCommand('copy');toast('Copied')}catch{toast('Select the text and copy it')}}};
+$('#shsd').onclick=async()=>{try{await navigator.share({title:'nnn reward',text:$('#sht2').value})}catch(e){if(!e||e.name!=='AbortError')toast('Sharing is not available here. Use Copy.')}};
+async function receiveText(t){const toks=[...String(t).matchAll(/#share=([A-Za-z0-9_\-.]+)/g)].map(m=>m[1].replace(/\.+$/,''));if(!toks.length)throw new Error('none');const ds=[];for(const k of toks)ds.push(await unpackLink(k));
+ const ex=ds.map(d=>d.exp).filter(Boolean);return{links:ds.flatMap(d=>d.links||[]),cats:[...new Set(ds.flatMap(d=>d.cats||[]))],exp:ex.length?Math.min(...ex):0}}
+$('#rlb').onclick=async()=>{try{showReceive(await receiveText($('#rli').value))}catch(e){toast(e&&e.message&&e.message.startsWith('This browser')?e.message:e&&e.message==='none'?'Paste a full share link':'That link could not be read')}};
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{if(t.dataset.v==='home')setTimeout(fitToday,40)}));
